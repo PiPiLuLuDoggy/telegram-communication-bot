@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  telegram-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: telegram-communication-bot
+    restart: unless-stopped
+    environment:
+      # Bot Configuration
+      BOT_TOKEN: ${BOT_TOKEN}
+      APP_NAME: ${APP_NAME:-TelegramCommunicationBot}
+      WELCOME_MESSAGE: ${WELCOME_MESSAGE:-欢迎使用我们的客服机器人！请发送您的问题，我们的客服人员将尽快回复您。}
+
+      # Admin Configuration
+      ADMIN_GROUP_ID: ${ADMIN_GROUP_ID}
+      ADMIN_USER_IDS: ${ADMIN_USER_IDS}
+
+      # Bot Behavior Settings
+      DELETE_TOPIC_AS_FOREVER_BAN: ${DELETE_TOPIC_AS_FOREVER_BAN:-false}
+      DELETE_USER_MESSAGE_ON_CLEAR_CMD: ${DELETE_USER_MESSAGE_ON_CLEAR_CMD:-false}
+      DISABLE_CAPTCHA: ${DISABLE_CAPTCHA:-false}
+      MESSAGE_INTERVAL: ${MESSAGE_INTERVAL:-5}
+
+      # Database Settings
+      DATABASE_PATH: /app/data/bot.db
+
+      # Server Settings (for webhook mode)
+      PORT: ${PORT:-8080}
+      WEBHOOK_URL: ${WEBHOOK_URL}
+
+      # Debug mode (default enabled for logging)
+      DEBUG: ${DEBUG:-true}
+
+    volumes:
+      # Persist database and data
+      - bot_data:/app/data
+
+    ports:
+      # Only expose port if using webhook mode
+      - "${PORT:-8080}:8080"
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "pgrep", "telegram-bot"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  bot_data:
+    driver: local

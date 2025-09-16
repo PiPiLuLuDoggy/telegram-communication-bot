@@ -8,7 +8,7 @@ import (
 	"telegram-communication-bot/internal/models"
 	"time"
 
-	api "github.com/TGlimmer/telegram-bot-api"
+	api "github.com/OvyFlash/telegram-bot-api"
 )
 
 type MessageService struct {

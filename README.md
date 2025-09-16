@@ -1,12 +1,11 @@
 # Telegram Communication Bot
 
-一个完整的 Telegram 客服机器人，支持用户与管理员之间的双向消息转发、验证码验证、论坛话题管理等功能。
+一个完整的 Telegram 客服机器人，支持用户与管理员之间的双向消息转发、论坛话题管理等功能。
 
 **语言选择**: **中文** | [English](README.en.md)
 
 ## 功能特性
 
-- 🔐 **图片验证码**：防止机器人滥用
 - 💬 **双向消息转发**：用户消息自动转发到管理群组
 - 🎯 **论坛话题管理**：为每个用户创建专属话题
 - 🛡️ **防滥用机制**：消息频率限制
@@ -56,7 +55,6 @@ ADMIN_USER_IDS=123456789,987654321  # 管理员用户ID（逗号分隔）
 
 # 可选配置
 WELCOME_MESSAGE=欢迎使用我们的客服机器人！
-DISABLE_CAPTCHA=false  # 是否禁用验证码
 MESSAGE_INTERVAL=5     # 用户发送消息间隔（秒）
 ```
 
@@ -84,8 +82,7 @@ docker-compose logs -f telegram-bot
 ### 用户端
 1. 搜索并启动您的机器人
 2. 发送 `/start` 开始使用
-3. 完成验证码验证（如果启用）
-4. 直接发送消息给机器人
+3. 直接发送消息给机器人
 
 ### 管理端
 1. 在管理群组中查看用户消息（每个用户一个话题）
@@ -103,10 +100,9 @@ docker-compose logs -f telegram-bot
 | `WELCOME_MESSAGE` | 用户欢迎消息 | 默认中文欢迎词 | ❌ |
 | `DELETE_TOPIC_AS_FOREVER_BAN` | 删除话题时永久封禁用户 | false | ❌ |
 | `DELETE_USER_MESSAGE_ON_CLEAR_CMD` | 清理命令时删除用户消息 | false | ❌ |
-| `DISABLE_CAPTCHA` | 禁用验证码验证 | false | ❌ |
 | `MESSAGE_INTERVAL` | 用户消息发送间隔（秒） | 5 | ❌ |
 | `DATABASE_PATH` | 数据库文件路径 | ./data/bot.db | ❌ |
-| `PORT` | 服务端口（Webhook模式） | 8080 | ❌ |
+| `PORT` | 服务端口（Webhook模式） | 8090 | ❌ |
 | `WEBHOOK_URL` | Webhook地址（可选） | - | ❌ |
 | `DEBUG` | 调试模式（启用详细日志） | true | ❌ |
 
@@ -118,8 +114,6 @@ A: 检查 Bot Token 是否正确，查看日志 `docker-compose logs telegram-bo
 **Q: 无法创建论坛话题？**
 A: 确保：1）群组开启了论坛功能 2）机器人有管理员权限 3）群组ID正确（负数）
 
-**Q: 验证码不显示？**
-A: 验证码图片已包含在镜像中，如仍有问题可设置 `DISABLE_CAPTCHA=true`
 
 **Q: 如何停止机器人？**
 ```bash

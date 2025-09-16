@@ -29,7 +29,6 @@ func main() {
 	log.Printf("Admin Group: %d", cfg.AdminGroupID)
 	log.Printf("Admin Users: %v", cfg.AdminUserIDs)
 	log.Printf("Message Interval: %d seconds", cfg.MessageInterval)
-	log.Printf("CAPTCHA: %s", getBoolString(!cfg.DisableCaptcha))
 
 	// Create bot instance
 	botInstance, err := bot.NewBot(cfg)
@@ -74,9 +73,3 @@ func main() {
 	log.Println("Bot shutdown completed")
 }
 
-func getBoolString(value bool) string {
-	if value {
-		return "enabled"
-	}
-	return "disabled"
-}

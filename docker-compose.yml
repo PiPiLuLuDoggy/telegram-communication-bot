@@ -20,14 +20,13 @@ services:
       # Bot Behavior Settings
       DELETE_TOPIC_AS_FOREVER_BAN: ${DELETE_TOPIC_AS_FOREVER_BAN:-false}
       DELETE_USER_MESSAGE_ON_CLEAR_CMD: ${DELETE_USER_MESSAGE_ON_CLEAR_CMD:-false}
-      DISABLE_CAPTCHA: ${DISABLE_CAPTCHA:-false}
       MESSAGE_INTERVAL: ${MESSAGE_INTERVAL:-5}
 
       # Database Settings
       DATABASE_PATH: /app/data/bot.db
 
       # Server Settings (for webhook mode)
-      PORT: ${PORT:-8080}
+      PORT: ${PORT:-8090}
       WEBHOOK_URL: ${WEBHOOK_URL}
 
       # Debug mode (default enabled for logging)
@@ -39,7 +38,7 @@ services:
 
     ports:
       # Only expose port if using webhook mode
-      - "${PORT:-8080}:8080"
+      - "${PORT:-8090}:8090"
 
     # Health check
     healthcheck:

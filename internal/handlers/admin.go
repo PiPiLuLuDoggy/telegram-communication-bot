@@ -7,7 +7,7 @@ import (
 	"strings"
 	"telegram-communication-bot/internal/models"
 
-	api "github.com/TGlimmer/telegram-bot-api"
+	api "github.com/OvyFlash/telegram-bot-api"
 )
 
 // handleClearCommand handles the /clear command for admins
@@ -177,7 +177,6 @@ func (h *Handlers) handleStatsCommand(message *api.Message) {
 • 活跃对话: %d
 
 🔧 <b>系统设置:</b>
-• 验证码: %s
 • 消息间隔: %d秒
 • 删除对话永久禁止: %s
 • 清除时删除消息: %s`,
@@ -186,7 +185,6 @@ func (h *Handlers) handleStatsCommand(message *api.Message) {
 		bannedUsers,
 		premiumUsers,
 		len(activeTopics),
-		h.getBoolString(!h.config.DisableCaptcha),
 		h.config.MessageInterval,
 		h.getBoolString(h.config.DeleteTopicAsForeverBan),
 		h.getBoolString(h.config.DeleteUserMessageOnClearCmd))
@@ -196,22 +194,6 @@ func (h *Handlers) handleStatsCommand(message *api.Message) {
 	h.bot.Send(msg)
 }
 
-// handleStartVerification handles the start verification callback
-func (h *Handlers) handleStartVerification(callbackQuery *api.CallbackQuery) {
-	userID := callbackQuery.From.ID
-	chatID := callbackQuery.Message.Chat.ID
-
-	if h.config.DisableCaptcha {
-		h.sendMessage(chatID, "✅ 验证已禁用，您可以直接发送消息")
-		return
-	}
-
-	// Send CAPTCHA
-	if _, err := h.captchaService.SendCaptcha(h.bot, chatID, userID); err != nil {
-		log.Printf("Error sending CAPTCHA: %v", err)
-		h.sendMessage(chatID, "❌ 验证码发送失败，请稍后再试")
-	}
-}
 
 // getBoolString returns a Chinese string representation of a boolean
 func (h *Handlers) getBoolString(value bool) string {

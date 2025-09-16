@@ -7,7 +7,7 @@ import (
 	"telegram-communication-bot/internal/database"
 	"telegram-communication-bot/internal/models"
 
-	api "github.com/TGlimmer/telegram-bot-api"
+	api "github.com/OvyFlash/telegram-bot-api"
 )
 
 type ForumService struct {

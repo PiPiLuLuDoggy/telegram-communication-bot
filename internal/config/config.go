@@ -23,7 +23,6 @@ type Config struct {
 	// Bot Behavior Settings
 	DeleteTopicAsForeverBan      bool
 	DeleteUserMessageOnClearCmd  bool
-	DisableCaptcha               bool
 	MessageInterval              int
 
 	// Database Settings
@@ -83,14 +82,13 @@ func LoadConfig() (*Config, error) {
 	// Load bot behavior settings
 	config.DeleteTopicAsForeverBan = getBoolEnv("DELETE_TOPIC_AS_FOREVER_BAN", false)
 	config.DeleteUserMessageOnClearCmd = getBoolEnv("DELETE_USER_MESSAGE_ON_CLEAR_CMD", false)
-	config.DisableCaptcha = getBoolEnv("DISABLE_CAPTCHA", false)
 	config.MessageInterval = getIntEnv("MESSAGE_INTERVAL", 5)
 
 	// Load database settings
 	config.DatabasePath = getEnvWithDefault("DATABASE_PATH", "./data/bot.db")
 
 	// Load server settings
-	config.Port = getIntEnv("PORT", 8080)
+	config.Port = getIntEnv("PORT", 8090)
 	config.WebhookURL = os.Getenv("WEBHOOK_URL")
 
 	// Debug mode

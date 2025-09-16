@@ -7,7 +7,7 @@ import (
 	"telegram-communication-bot/internal/models"
 	"telegram-communication-bot/internal/services"
 
-	api "github.com/TGlimmer/telegram-bot-api"
+	api "github.com/OvyFlash/telegram-bot-api"
 	"github.com/robfig/cron/v3"
 )
 
@@ -15,7 +15,6 @@ type Handlers struct {
 	bot            *api.BotAPI
 	config         *config.Config
 	db             *database.DB
-	captchaService *services.CaptchaService
 	messageService *services.MessageService
 	forumService   *services.ForumService
 	rateLimiter    *services.RateLimiter
@@ -26,7 +25,6 @@ func NewHandlers(
 	bot *api.BotAPI,
 	config *config.Config,
 	db *database.DB,
-	captchaService *services.CaptchaService,
 	messageService *services.MessageService,
 	forumService *services.ForumService,
 	rateLimiter *services.RateLimiter,
@@ -36,7 +34,6 @@ func NewHandlers(
 		bot:            bot,
 		config:         config,
 		db:             db,
-		captchaService: captchaService,
 		messageService: messageService,
 		forumService:   forumService,
 		rateLimiter:    rateLimiter,
@@ -106,8 +103,6 @@ func (h *Handlers) HandleCallbackQuery(callbackQuery *api.CallbackQuery) {
 	// Handle specific callback data
 	data := callbackQuery.Data
 	switch data {
-	case "start_verification":
-		h.handleStartVerification(callbackQuery)
 	default:
 		log.Printf("Unknown callback data: %s", data)
 	}
@@ -174,14 +169,6 @@ func (h *Handlers) handleStartCommand(message *api.Message) {
 
 		// Send welcome message
 		h.sendMessage(chatID, h.config.WelcomeMessage)
-
-		// If CAPTCHA is enabled and user hasn't been verified, send CAPTCHA
-		if !h.config.DisableCaptcha && !h.captchaService.HasCaptchaSession(userID) {
-			if _, err := h.captchaService.SendCaptcha(h.bot, chatID, userID); err != nil {
-				log.Printf("Error sending CAPTCHA: %v", err)
-				h.sendMessage(chatID, "❌ 验证码发送失败，请稍后再试")
-			}
-		}
 	}
 }
 
@@ -190,11 +177,6 @@ func (h *Handlers) handleUserMessage(message *api.Message) {
 	userID := message.From.ID
 	chatID := message.Chat.ID
 
-	// Check if user has pending CAPTCHA
-	if !h.config.DisableCaptcha && h.captchaService.HasCaptchaSession(userID) {
-		h.handleCaptchaResponse(message)
-		return
-	}
 
 	// Check rate limit
 	if h.rateLimiter.IsEnabled() {
@@ -326,35 +308,6 @@ func (h *Handlers) handleAdminReply(message *api.Message) {
 	}
 }
 
-// handleCaptchaResponse handles user responses to CAPTCHA challenges
-func (h *Handlers) handleCaptchaResponse(message *api.Message) {
-	userID := message.From.ID
-	chatID := message.Chat.ID
-
-	if message.Text == "" {
-		h.sendMessage(chatID, "❌ 请发送验证码文本")
-		return
-	}
-
-	// Verify CAPTCHA
-	isValid, err := h.captchaService.VerifyCaptcha(userID, message.Text)
-	if err != nil {
-		log.Printf("CAPTCHA verification error: %v", err)
-		h.sendMessage(chatID, "❌ 验证失败，请重新获取验证码")
-
-		// Send new CAPTCHA
-		if _, err := h.captchaService.SendCaptcha(h.bot, chatID, userID); err != nil {
-			log.Printf("Error sending new CAPTCHA: %v", err)
-		}
-		return
-	}
-
-	if isValid {
-		h.sendMessage(chatID, "✅ 验证成功！您现在可以发送消息了。")
-	} else {
-		h.sendMessage(chatID, "❌ 验证码错误，请重新输入")
-	}
-}
 
 // sendMessage sends a text message to a chat
 func (h *Handlers) sendMessage(chatID int64, text string) {

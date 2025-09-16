@@ -9,7 +9,7 @@ import (
 	"telegram-communication-bot/internal/handlers"
 	"telegram-communication-bot/internal/services"
 
-	api "github.com/TGlimmer/telegram-bot-api"
+	api "github.com/OvyFlash/telegram-bot-api"
 	"github.com/robfig/cron/v3"
 )
 
@@ -18,7 +18,6 @@ type Bot struct {
 	Config          *config.Config
 	DB              *database.DB
 	Scheduler       *cron.Cron
-	CaptchaService  *services.CaptchaService
 	MessageService  *services.MessageService
 	ForumService    *services.ForumService
 	RateLimiter     *services.RateLimiter
@@ -47,20 +46,18 @@ func NewBot(cfg *config.Config) (*Bot, error) {
 	scheduler := cron.New(cron.WithSeconds())
 
 	// Initialize services
-	captchaService := services.NewCaptchaService(db)
 	messageService := services.NewMessageService(db)
 	forumService := services.NewForumService(botAPI, cfg, db)
 	rateLimiter := services.NewRateLimiter(cfg.MessageInterval, db)
 
 	// Initialize handlers
-	handlers := handlers.NewHandlers(botAPI, cfg, db, captchaService, messageService, forumService, rateLimiter, scheduler)
+	handlers := handlers.NewHandlers(botAPI, cfg, db, messageService, forumService, rateLimiter, scheduler)
 
 	bot := &Bot{
 		API:            botAPI,
 		Config:         cfg,
 		DB:             db,
 		Scheduler:      scheduler,
-		CaptchaService: captchaService,
 		MessageService: messageService,
 		ForumService:   forumService,
 		RateLimiter:    rateLimiter,
@@ -77,6 +74,12 @@ func NewBot(cfg *config.Config) (*Bot, error) {
 // Start starts the bot
 func (b *Bot) Start() error {
 	log.Println("Starting bot...")
+
+	// Try to remove any existing webhook first
+	log.Println("Removing any existing webhook...")
+	if err := b.RemoveWebhook(); err != nil {
+		log.Printf("Warning: Failed to remove webhook: %v", err)
+	}
 
 	// Start the scheduler
 	b.Scheduler.Start()
@@ -145,12 +148,6 @@ func (b *Bot) processUpdate(update api.Update) {
 
 // setupScheduledTasks sets up recurring scheduled tasks
 func (b *Bot) setupScheduledTasks() {
-	// Cleanup expired captcha sessions every minute
-	b.Scheduler.AddFunc("@every 1m", func() {
-		if err := b.DB.CleanupExpiredCaptchaSessions(); err != nil {
-			log.Printf("Error cleaning up expired captcha sessions: %v", err)
-		}
-	})
 
 	// Cleanup old user messages every hour
 	b.Scheduler.AddFunc("@every 1h", func() {
@@ -160,11 +157,6 @@ func (b *Bot) setupScheduledTasks() {
 		}
 	})
 
-	// Cleanup old media group messages every 6 hours
-	b.Scheduler.AddFunc("@every 6h", func() {
-		cutoff := time.Now().Add(-24 * time.Hour)
-		b.CaptchaService.CleanupOldCaptchaImages(cutoff)
-	})
 
 	log.Println("Scheduled tasks configured")
 }

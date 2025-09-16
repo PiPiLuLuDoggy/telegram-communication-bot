@@ -44,20 +44,6 @@ type User struct {
 	CreatedAt       time.Time `json:"created_at"`
 }
 
-// CaptchaSession represents a user's captcha verification session
-type CaptchaSession struct {
-	UserID        int64     `gorm:"primarykey" json:"user_id"`
-	Code          string    `gorm:"not null" json:"code"`
-	MessageID     int       `gorm:"not null" json:"message_id"`
-	ChatID        int64     `gorm:"not null" json:"chat_id"`
-	ExpiresAt     time.Time `gorm:"not null" json:"expires_at"`
-	CreatedAt     time.Time `json:"created_at"`
-}
-
-// IsExpired checks if the captcha session has expired
-func (cs *CaptchaSession) IsExpired() bool {
-	return time.Now().After(cs.ExpiresAt)
-}
 
 // UserMessage tracks user messages for rate limiting
 type UserMessage struct {
@@ -84,7 +70,6 @@ func AutoMigrateAll(db *gorm.DB) error {
 		&ForumStatus{},
 		&MessageMap{},
 		&User{},
-		&CaptchaSession{},
 		&UserMessage{},
 		&BanStatus{},
 	)

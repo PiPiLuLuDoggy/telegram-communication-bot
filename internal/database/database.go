@@ -10,6 +10,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	_ "modernc.org/sqlite"
 )
 
 type DB struct {
@@ -32,8 +33,11 @@ func NewDatabase(databasePath string) (*DB, error) {
 		},
 	}
 
-	// Open SQLite database
-	db, err := gorm.Open(sqlite.Open(databasePath), config)
+	// Open SQLite database with pure-Go driver
+	db, err := gorm.Open(sqlite.Dialector{
+		DriverName: "sqlite",
+		DSN:        databasePath,
+	}, config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
@@ -142,28 +146,6 @@ func (db *DB) GetForumStatus(messageThreadID int) (*models.ForumStatus, error) {
 	return &status, nil
 }
 
-// CaptchaSession operations
-func (db *DB) CreateCaptchaSession(session *models.CaptchaSession) error {
-	session.CreatedAt = time.Now()
-	return db.DB.Save(session).Error
-}
-
-func (db *DB) GetCaptchaSession(userID int64) (*models.CaptchaSession, error) {
-	var session models.CaptchaSession
-	err := db.DB.First(&session, userID).Error
-	if err != nil {
-		return nil, err
-	}
-	return &session, nil
-}
-
-func (db *DB) DeleteCaptchaSession(userID int64) error {
-	return db.DB.Delete(&models.CaptchaSession{}, userID).Error
-}
-
-func (db *DB) CleanupExpiredCaptchaSessions() error {
-	return db.DB.Where("expires_at < ?", time.Now()).Delete(&models.CaptchaSession{}).Error
-}
 
 // UserMessage operations for rate limiting
 func (db *DB) CreateUserMessage(msg *models.UserMessage) error {

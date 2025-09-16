@@ -1,12 +1,11 @@
 # Telegram Communication Bot
 
-A complete Telegram customer service bot that supports bidirectional message forwarding between users and administrators, CAPTCHA verification, forum topic management, and more.
+A complete Telegram customer service bot that supports bidirectional message forwarding between users and administrators, forum topic management, and more.
 
 **Language**: [中文](README.md) | **English**
 
 ## Features
 
-- 🔐 **Image CAPTCHA**: Prevents bot abuse
 - 💬 **Bidirectional Message Forwarding**: User messages automatically forwarded to admin group
 - 🎯 **Forum Topic Management**: Create dedicated topics for each user
 - 🛡️ **Anti-Abuse Mechanism**: Message rate limiting
@@ -56,7 +55,6 @@ ADMIN_USER_IDS=123456789,987654321  # Admin user IDs (comma separated)
 
 # Optional Configuration
 WELCOME_MESSAGE=Welcome to our customer service bot!
-DISABLE_CAPTCHA=false  # Whether to disable CAPTCHA
 MESSAGE_INTERVAL=5     # User message interval (seconds)
 ```
 
@@ -84,8 +82,7 @@ docker-compose logs -f telegram-bot
 ### User Side
 1. Search and start your bot
 2. Send `/start` to begin
-3. Complete CAPTCHA verification (if enabled)
-4. Send messages directly to the bot
+3. Send messages directly to the bot
 
 ### Admin Side
 1. View user messages in the admin group (one topic per user)
@@ -103,10 +100,9 @@ docker-compose logs -f telegram-bot
 | `WELCOME_MESSAGE` | User Welcome Message | Default Chinese Welcome | ❌ |
 | `DELETE_TOPIC_AS_FOREVER_BAN` | Permanently ban user when deleting topic | false | ❌ |
 | `DELETE_USER_MESSAGE_ON_CLEAR_CMD` | Delete user messages on clear command | false | ❌ |
-| `DISABLE_CAPTCHA` | Disable CAPTCHA verification | false | ❌ |
 | `MESSAGE_INTERVAL` | User message sending interval (seconds) | 5 | ❌ |
 | `DATABASE_PATH` | Database file path | ./data/bot.db | ❌ |
-| `PORT` | Service port (Webhook mode) | 8080 | ❌ |
+| `PORT` | Service port (Webhook mode) | 8090 | ❌ |
 | `WEBHOOK_URL` | Webhook URL (optional) | - | ❌ |
 | `DEBUG` | Debug mode (enable detailed logging) | true | ❌ |
 
@@ -118,8 +114,6 @@ A: Check if the Bot Token is correct, view logs: `docker-compose logs telegram-b
 **Q: Cannot create forum topics?**
 A: Ensure: 1) Group has forum functionality enabled 2) Bot has admin permissions 3) Group ID is correct (negative number)
 
-**Q: CAPTCHA not displaying?**
-A: CAPTCHA images are included in the image. If issues persist, set `DISABLE_CAPTCHA=true`
 
 **Q: How to stop the bot?**
 ```bash

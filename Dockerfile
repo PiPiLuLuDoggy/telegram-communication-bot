@@ -34,9 +34,6 @@ WORKDIR /app
 # Copy binary from builder stage
 COPY --from=builder /app/telegram-bot .
 
-# Copy assets
-COPY --chown=appuser:appgroup assets/ ./assets/
-
 # Create data directory
 RUN mkdir -p data && chown -R appuser:appgroup data
 

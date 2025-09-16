@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"log"
+	"strings"
 	"telegram-communication-bot/internal/config"
 	"telegram-communication-bot/internal/database"
 	"telegram-communication-bot/internal/models"
@@ -136,6 +137,12 @@ func (h *Handlers) handleCommand(message *api.Message) {
 		} else {
 			h.sendMessage(chatID, "❌ 您没有权限使用此命令")
 		}
+	case "reset":
+		if h.config.IsAdminUser(userID) {
+			h.handleResetCommand(message, args)
+		} else {
+			h.sendMessage(chatID, "❌ 您没有权限使用此命令")
+		}
 	default:
 		h.sendMessage(chatID, "❓ 未知命令。使用 /start 开始使用机器人。")
 	}
@@ -221,16 +228,23 @@ func (h *Handlers) handleUserMessage(message *api.Message) {
 // forwardUserMessageToAdmin forwards a user message to the admin group
 func (h *Handlers) forwardUserMessageToAdmin(message *api.Message, user *models.User) {
 	// Get or create forum topic
-	threadID, err := h.forumService.CreateOrGetForumTopic(user)
+	threadID, isNewTopic, err := h.forumService.CreateOrGetForumTopic(user)
 	if err != nil {
 		log.Printf("Error creating forum topic: %v", err)
 		return
 	}
 
-	// Send contact card for new conversations
-	if user.MessageThreadID == 0 {
-		if _, err := h.messageService.SendContactCard(h.bot, user, h.config.AdminGroupID, threadID); err != nil {
-			log.Printf("Error sending contact card: %v", err)
+	// Send user info message for new conversations
+	if isNewTopic {
+		// Send user info message
+		userInfoMsg, err := h.messageService.SendUserInfoMessage(h.bot, user, h.config.AdminGroupID, threadID)
+		if err != nil {
+			log.Printf("Error sending user info message: %v", err)
+		} else {
+			// Create message mapping for the user info message
+			if err := h.messageService.CreateMessageMap(0, userInfoMsg.MessageID, user.UserID); err != nil {
+				log.Printf("Error creating user info message mapping: %v", err)
+			}
 		}
 	}
 
@@ -243,6 +257,28 @@ func (h *Handlers) forwardUserMessageToAdmin(message *api.Message, user *models.
 	// Forward the message
 	forwardedMsg, err := h.messageService.ForwardMessageToGroup(h.bot, message, h.config.AdminGroupID, threadID)
 	if err != nil {
+		// Check if the error is due to thread not found
+		if strings.Contains(err.Error(), "message thread not found") {
+			log.Printf("Thread %d not found for user %d, resetting thread ID and retrying", threadID, user.UserID)
+
+			// Reset user's thread ID
+			if resetErr := h.forumService.ResetUserThreadID(user.UserID); resetErr != nil {
+				log.Printf("Error resetting user thread ID: %v", resetErr)
+				return
+			}
+
+			// Get updated user object from database
+			updatedUser, err := h.db.GetUser(user.UserID)
+			if err != nil {
+				log.Printf("Error getting updated user: %v", err)
+				return
+			}
+
+			// Retry forwarding message with updated user object
+			h.forwardUserMessageToAdmin(message, updatedUser)
+			return
+		}
+
 		log.Printf("Error forwarding message to admin group: %v", err)
 		return
 	}
@@ -272,19 +308,32 @@ func (h *Handlers) handleAdminGroupMessage(message *api.Message) {
 // handleAdminReply handles admin replies to user messages
 func (h *Handlers) handleAdminReply(message *api.Message) {
 	replyToMessage := message.ReplyToMessage
+	var user *models.User
 
-	// Find the original user message
+	// First, try to find the original user message mapping
 	messageMap, err := h.messageService.GetUserMessageFromGroup(replyToMessage.MessageID)
 	if err != nil {
 		log.Printf("Error finding message mapping: %v", err)
-		return
-	}
 
-	// Get user info
-	user, err := h.db.GetUser(messageMap.UserID)
-	if err != nil {
-		log.Printf("Error getting user: %v", err)
-		return
+		// Fallback: try to find user by thread ID
+		threadID := h.forumService.GetThreadIDFromMessage(message)
+		if threadID != 0 {
+			user, err = h.forumService.GetUserByThreadID(threadID)
+			if err != nil {
+				log.Printf("Error finding user by thread ID: %v", err)
+				return
+			}
+		} else {
+			log.Printf("No thread ID found in message")
+			return
+		}
+	} else {
+		// Get user info from message mapping
+		user, err = h.db.GetUser(messageMap.UserID)
+		if err != nil {
+			log.Printf("Error getting user: %v", err)
+			return
+		}
 	}
 
 	// Forward admin's reply to the user

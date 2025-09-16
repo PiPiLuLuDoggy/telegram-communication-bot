@@ -25,14 +25,15 @@ func NewForumService(bot *api.BotAPI, config *config.Config, db *database.DB) *F
 }
 
 // CreateOrGetForumTopic creates a new forum topic for a user or returns existing one
-func (fs *ForumService) CreateOrGetForumTopic(user *models.User) (int, error) {
+// Returns: threadID, isNewTopic, error
+func (fs *ForumService) CreateOrGetForumTopic(user *models.User) (int, bool, error) {
 	if !fs.config.HasAdminGroup() {
-		return 0, fmt.Errorf("admin group not configured")
+		return 0, false, fmt.Errorf("admin group not configured")
 	}
 
 	// If user already has a thread ID, return it
 	if user.MessageThreadID != 0 {
-		return user.MessageThreadID, nil
+		return user.MessageThreadID, false, nil
 	}
 
 	// Create new forum topic
@@ -42,7 +43,7 @@ func (fs *ForumService) CreateOrGetForumTopic(user *models.User) (int, error) {
 
 	topic, err := fs.bot.CreateForumTopic(createTopicConfig)
 	if err != nil {
-		return 0, fmt.Errorf("failed to create forum topic: %w", err)
+		return 0, false, fmt.Errorf("failed to create forum topic: %w", err)
 	}
 
 	messageThreadID := topic.MessageThreadID
@@ -62,7 +63,7 @@ func (fs *ForumService) CreateOrGetForumTopic(user *models.User) (int, error) {
 		log.Printf("Error creating forum status: %v", err)
 	}
 
-	return messageThreadID, nil
+	return messageThreadID, true, nil
 }
 
 // CloseForumTopic closes a forum topic
@@ -252,4 +253,25 @@ func (fs *ForumService) BulkUpdateTopicStatus(threadIDs []int, status string) er
 		Where("message_thread_id IN ?", threadIDs).
 		Update("status", status).
 		Update("updated_at", "NOW()").Error
+}
+
+// ResetUserThreadID resets a user's thread ID when their topic is deleted
+func (fs *ForumService) ResetUserThreadID(userID int64) error {
+	// Reset user's message_thread_id to 0
+	err := fs.db.DB.Model(&models.User{}).
+		Where("user_id = ?", userID).
+		Update("message_thread_id", 0).Error
+	if err != nil {
+		return fmt.Errorf("failed to reset user thread ID: %w", err)
+	}
+
+	// Remove the forum status record
+	err = fs.db.DB.Where("message_thread_id IN (SELECT message_thread_id FROM users WHERE user_id = ?)", userID).
+		Delete(&models.ForumStatus{}).Error
+	if err != nil {
+		log.Printf("Warning: failed to delete forum status for user %d: %v", userID, err)
+	}
+
+	log.Printf("Reset thread ID for user %d", userID)
+	return nil
 }

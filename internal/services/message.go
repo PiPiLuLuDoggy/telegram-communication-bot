@@ -356,3 +356,42 @@ func (ms *MessageService) SendContactCard(bot *api.BotAPI, user *models.User, gr
 
 	return &sentMessage, nil
 }
+
+// SendUserInfoMessage sends a user's basic info (username and ID) to the admin group
+func (ms *MessageService) SendUserInfoMessage(bot *api.BotAPI, user *models.User, groupChatID int64, messageThreadID int) (*api.Message, error) {
+	// Create user info text
+	var infoText strings.Builder
+	infoText.WriteString("📋 <b>用户信息</b>\n\n")
+
+	if user.Username != "" {
+		infoText.WriteString(fmt.Sprintf("👤 用户名: @%s\n", user.Username))
+	} else {
+		infoText.WriteString("👤 用户名: <i>无</i>\n")
+	}
+
+	infoText.WriteString(fmt.Sprintf("🆔 用户ID: <code>%d</code>", user.UserID))
+
+	// Send the user info message
+	msg := api.NewMessage(groupChatID, infoText.String())
+	msg.MessageThreadID = messageThreadID
+	msg.ParseMode = api.ModeHTML
+
+	sentMessage, err := bot.Send(msg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send user info message: %w", err)
+	}
+
+	return &sentMessage, nil
+}
+
+// PinMessage pins a message in a chat
+func (ms *MessageService) PinMessage(bot *api.BotAPI, chatID int64, messageID int) error {
+	pinConfig := api.NewPinChatMessage(chatID, messageID, true) // true for DisableNotification
+
+	_, err := bot.Request(pinConfig)
+	if err != nil {
+		return fmt.Errorf("failed to pin message: %w", err)
+	}
+
+	return nil
+}

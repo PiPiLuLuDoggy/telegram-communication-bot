@@ -7,10 +7,12 @@ A complete Telegram customer service bot that supports bidirectional message for
 ## Features
 
 - 💬 **Bidirectional Message Forwarding**: User messages automatically forwarded to admin group
-- 🎯 **Forum Topic Management**: Create dedicated topics for each user
-- 🛡️ **Anti-Abuse Mechanism**: Message rate limiting
-- 📡 **Admin Functions**: Broadcast messages, user statistics, conversation management
+- 🎯 **Forum Topic Management**: Create dedicated topics for each user with automatic user info display
+- 🛡️ **Anti-Abuse Mechanism**: Message rate limiting to prevent spam
+- 📡 **Admin Functions**: Broadcast messages, user statistics, conversation management, topic reset
 - 🚫 **User Ban System**: Supports permanent and temporary bans
+- 🔄 **Auto Recovery**: Automatically creates new topics when users message after topic deletion
+- 👤 **User Info Display**: New topics automatically show username and ID information
 
 ## Quick Deployment
 
@@ -74,6 +76,7 @@ docker-compose logs -f telegram-bot
 |---------|-------------|---------|
 | `/start` | Check bot status | `/start` |
 | `/clear <user_id>` | Clear user conversation | `/clear 123456789` |
+| `/reset <user_id>` | Reset user topic ID (fix deleted topic issues) | `/reset 123456789` |
 | `/broadcast` | Broadcast message | Reply to a message then send `/broadcast` |
 | `/stats` | View statistics | `/stats` |
 
@@ -86,8 +89,16 @@ docker-compose logs -f telegram-bot
 
 ### Admin Side
 1. View user messages in the admin group (one topic per user)
-2. Reply directly in the topic to users
-3. Use admin commands to manage users and system
+2. Each new topic automatically displays user information:
+   ```
+   📋 User Info
+
+   👤 Username: @username
+   🆔 User ID: 123456789
+   ```
+3. Reply directly in the topic to users
+4. Use admin commands to manage users and system
+5. If a topic is accidentally deleted, users can send new messages to automatically create a new topic
 
 ## Configuration Options
 
@@ -113,6 +124,12 @@ A: Check if the Bot Token is correct, view logs: `docker-compose logs telegram-b
 
 **Q: Cannot create forum topics?**
 A: Ensure: 1) Group has forum functionality enabled 2) Bot has admin permissions 3) Group ID is correct (negative number)
+
+**Q: Accidentally deleted a user topic?**
+A: Users can send new messages to automatically create new topics. Or use `/reset <user_id>` command to manually reset
+
+**Q: User messages not reaching admins?**
+A: Check if the topic was deleted, use `/reset <user_id>` to reset user status
 
 
 **Q: How to stop the bot?**

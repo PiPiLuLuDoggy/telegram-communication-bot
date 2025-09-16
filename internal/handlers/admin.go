@@ -262,3 +262,35 @@ func (h *Handlers) getUserInfo(user *models.User) string {
 
 	return info.String()
 }
+
+// handleResetCommand handles the /reset command to reset user's thread ID
+func (h *Handlers) handleResetCommand(message *api.Message, args string) {
+	chatID := message.Chat.ID
+
+	if args == "" {
+		h.sendMessage(chatID, "❌ 请提供用户ID\n用法: /reset <user_id>")
+		return
+	}
+
+	userID, err := strconv.ParseInt(args, 10, 64)
+	if err != nil {
+		h.sendMessage(chatID, "❌ 无效的用户ID")
+		return
+	}
+
+	// Get user info
+	user, err := h.db.GetUser(userID)
+	if err != nil {
+		h.sendMessage(chatID, "❌ 用户不存在")
+		return
+	}
+
+	// Reset user's thread ID
+	if err := h.forumService.ResetUserThreadID(userID); err != nil {
+		h.sendMessage(chatID, fmt.Sprintf("❌ 重置用户 %d 的对话ID失败: %v", userID, err))
+		log.Printf("Error resetting thread ID for user %d: %v", userID, err)
+		return
+	}
+
+	h.sendMessage(chatID, fmt.Sprintf("✅ 已重置用户 %d (%s) 的对话ID\n用户下次发消息时将创建新的对话", userID, user.FirstName))
+}

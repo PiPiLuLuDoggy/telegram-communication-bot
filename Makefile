@@ -51,30 +51,30 @@ docker-build:
 
 docker-run:
 	@echo "Starting services with Docker Compose..."
-	docker-compose up -d
+	docker compose up -d
 
 docker-stop:
 	@echo "Stopping Docker Compose services..."
-	docker-compose down
+	docker compose down
 
 docker-clean:
 	@echo "Cleaning Docker resources..."
-	docker-compose down -v --rmi all
+	docker compose down -v --rmi all
 	docker system prune -f
 
 # Production Docker commands
 docker-prod-run:
 	@echo "Starting production services..."
-	docker-compose -f docker-compose.prod.yml up -d
+	docker compose -f docker-compose.prod.yml up -d
 
 docker-prod-stop:
 	@echo "Stopping production services..."
-	docker-compose -f docker-compose.prod.yml down
+	docker compose -f docker-compose.prod.yml down
 
 # Backup database (production)
 backup:
 	@echo "Running backup..."
-	docker-compose -f docker-compose.prod.yml --profile backup up backup
+	docker compose -f docker-compose.prod.yml --profile backup up backup
 
 # Go module commands
 deps:
@@ -129,8 +129,8 @@ migrate:
 # Log viewing
 logs:
 	@echo "Viewing application logs..."
-	docker-compose logs -f telegram-bot
+	docker compose logs -f telegram-bot
 
 logs-prod:
 	@echo "Viewing production logs..."
-	docker-compose -f docker-compose.prod.yml logs -f telegram-bot
+	docker compose -f docker-compose.prod.yml logs -f telegram-bot

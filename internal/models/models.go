@@ -39,6 +39,7 @@ type User struct {
 	LastName        string    `json:"last_name"`
 	Username        string    `json:"username"`
 	IsPremium       bool      `gorm:"default:false" json:"is_premium"`
+	Verified        bool      `gorm:"default:false" json:"verified"`
 	MessageThreadID int       `json:"message_thread_id"`
 	UpdatedAt       time.Time `json:"updated_at"`
 	CreatedAt       time.Time `json:"created_at"`

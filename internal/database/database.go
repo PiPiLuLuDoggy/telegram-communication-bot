@@ -213,3 +213,17 @@ func (db *DB) CountBannedUsers() (int64, error) {
 	err := db.DB.Model(&models.BanStatus{}).Where("is_banned = ?", true).Count(&count).Error
 	return count, err
 }
+
+// IsUserVerified checks if a user has passed CAPTCHA verification
+func (db *DB) IsUserVerified(userID int64) bool {
+	var user models.User
+	if err := db.DB.Select("verified").First(&user, userID).Error; err != nil {
+		return false
+	}
+	return user.Verified
+}
+
+// SetUserVerified updates the verified status for a user
+func (db *DB) SetUserVerified(userID int64, verified bool) error {
+	return db.DB.Model(&models.User{}).Where("user_id = ?", userID).Update("verified", verified).Error
+}

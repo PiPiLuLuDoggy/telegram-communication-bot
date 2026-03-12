@@ -24,6 +24,7 @@ type Bot struct {
 	MessageService *services.MessageService
 	ForumService   *services.ForumService
 	RateLimiter    *services.RateLimiter
+	CaptchaService *services.CaptchaService
 	handlers       *handlers.Handlers
 }
 
@@ -36,6 +37,7 @@ func NewBot(cfg *config.Config) (*Bot, error) {
 	scheduler := cron.New(cron.WithSeconds())
 	messageService := services.NewMessageService(db)
 	rateLimiter := services.NewRateLimiter(cfg.MessageInterval)
+	captchaService := services.NewCaptchaService()
 
 	b := &Bot{
 		Config:         cfg,
@@ -43,6 +45,7 @@ func NewBot(cfg *config.Config) (*Bot, error) {
 		Scheduler:      scheduler,
 		MessageService: messageService,
 		RateLimiter:    rateLimiter,
+		CaptchaService: captchaService,
 	}
 
 	opts := []tgbot.Option{
@@ -63,7 +66,7 @@ func NewBot(cfg *config.Config) (*Bot, error) {
 	forumService := services.NewForumService(tg, cfg, db)
 	b.ForumService = forumService
 
-	h := handlers.NewHandlers(tg, cfg, db, messageService, forumService, rateLimiter)
+	h := handlers.NewHandlers(tg, cfg, db, messageService, forumService, rateLimiter, captchaService)
 	b.handlers = h
 
 	b.setupScheduledTasks()
@@ -150,6 +153,7 @@ func (b *Bot) setupScheduledTasks() {
 			log.Printf("Error cleaning up old user messages: %v", err)
 		}
 		b.RateLimiter.CleanupStaleEntries()
+		b.CaptchaService.CleanupExpired()
 	})
 
 	log.Println("Scheduled tasks configured")

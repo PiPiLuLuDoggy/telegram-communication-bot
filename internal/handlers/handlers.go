@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"strconv"
 	"strings"
 	"telegram-communication-bot/internal/config"
 	"telegram-communication-bot/internal/database"
@@ -20,6 +22,7 @@ type Handlers struct {
 	messageService *services.MessageService
 	forumService   *services.ForumService
 	rateLimiter    *services.RateLimiter
+	captchaService *services.CaptchaService
 }
 
 func NewHandlers(
@@ -29,6 +32,7 @@ func NewHandlers(
 	messageService *services.MessageService,
 	forumService *services.ForumService,
 	rateLimiter *services.RateLimiter,
+	captchaService *services.CaptchaService,
 ) *Handlers {
 	return &Handlers{
 		bot:            bot,
@@ -37,6 +41,7 @@ func NewHandlers(
 		messageService: messageService,
 		forumService:   forumService,
 		rateLimiter:    rateLimiter,
+		captchaService: captchaService,
 	}
 }
 
@@ -81,6 +86,10 @@ func (h *Handlers) handleMessage(ctx context.Context, message *models.Message) {
 	}
 
 	if message.Chat.Type == "private" {
+		if h.config.CaptchaEnabled && !h.db.IsUserVerified(userID) {
+			h.sendCaptchaChallenge(ctx, message.Chat.ID, userID)
+			return
+		}
 		h.handleUserMessage(ctx, message)
 	}
 }
@@ -98,13 +107,14 @@ func (h *Handlers) handleCallbackQuery(ctx context.Context, callbackQuery *model
 		}
 	}()
 
-	h.bot.AnswerCallbackQuery(ctx, &tgbot.AnswerCallbackQueryParams{
-		CallbackQueryID: callbackQuery.ID,
-	})
-
 	data := callbackQuery.Data
-	switch data {
+	switch {
+	case strings.HasPrefix(data, "captcha_"):
+		h.handleCaptchaCallback(ctx, callbackQuery)
 	default:
+		h.bot.AnswerCallbackQuery(ctx, &tgbot.AnswerCallbackQueryParams{
+			CallbackQueryID: callbackQuery.ID,
+		})
 		log.Printf("Unknown callback data: %s", data)
 	}
 }
@@ -164,9 +174,21 @@ func (h *Handlers) handleStartCommand(ctx context.Context, message *models.Messa
 			Username:  message.From.Username,
 			IsPremium: message.From.IsPremium,
 		}
+
+		if existing, err := h.db.GetUser(userID); err == nil {
+			user.Verified = existing.Verified
+			user.MessageThreadID = existing.MessageThreadID
+		}
+
 		if err := h.db.CreateOrUpdateUser(user); err != nil {
 			log.Printf("Error updating user: %v", err)
 		}
+
+		if h.config.CaptchaEnabled && !user.Verified {
+			h.sendCaptchaChallenge(ctx, chatID, userID)
+			return
+		}
+
 		h.sendMessage(ctx, chatID, h.config.WelcomeMessage)
 	}
 }
@@ -318,6 +340,83 @@ func (h *Handlers) handleAdminReply(ctx context.Context, message *models.Message
 		if err := h.forumService.ReopenForumTopic(ctx, threadID); err != nil {
 			log.Printf("Error reopening forum topic: %v", err)
 		}
+	}
+}
+
+// sendCaptchaChallenge sends a new CAPTCHA challenge to the user.
+// Skips if a challenge is already active or the user is in cooldown.
+func (h *Handlers) sendCaptchaChallenge(ctx context.Context, chatID int64, userID int64) {
+	if h.captchaService.HasActiveChallenge(userID) {
+		return
+	}
+
+	if remaining := h.captchaService.GetCooldownRemaining(userID); remaining > 0 {
+		secs := int(remaining.Seconds()) + 1
+		h.sendMessage(ctx, chatID, fmt.Sprintf("⏰ 验证失败冷却中，请 %d 秒后再试", secs))
+		return
+	}
+
+	question, keyboard := h.captchaService.GenerateChallenge(userID)
+	msg, err := h.bot.SendMessage(ctx, &tgbot.SendMessageParams{
+		ChatID:      chatID,
+		Text:        question,
+		ReplyMarkup: keyboard,
+	})
+	if err != nil {
+		log.Printf("Error sending captcha: %v", err)
+		return
+	}
+	h.captchaService.SetMessageInfo(userID, msg.ID, chatID)
+}
+
+func (h *Handlers) handleCaptchaCallback(ctx context.Context, cq *models.CallbackQuery) {
+	userID := cq.From.ID
+
+	answerStr := strings.TrimPrefix(cq.Data, "captcha_")
+	answer, err := strconv.Atoi(answerStr)
+	if err != nil {
+		return
+	}
+
+	msgID, chatID, hasMsg := h.captchaService.GetMessageInfo(userID)
+
+	correct := h.captchaService.Verify(userID, answer)
+
+	if correct {
+		h.bot.AnswerCallbackQuery(ctx, &tgbot.AnswerCallbackQueryParams{
+			CallbackQueryID: cq.ID,
+			Text:            "✅ 验证通过！",
+		})
+
+		if hasMsg {
+			h.bot.DeleteMessage(ctx, &tgbot.DeleteMessageParams{
+				ChatID:    chatID,
+				MessageID: msgID,
+			})
+		}
+
+		if err := h.db.SetUserVerified(userID, true); err != nil {
+			log.Printf("Error setting user verified: %v", err)
+		}
+
+		h.sendMessage(ctx, chatID, h.config.WelcomeMessage)
+		return
+	}
+
+	remaining := h.captchaService.GetCooldownRemaining(userID)
+	secs := int(remaining.Seconds()) + 1
+
+	h.bot.AnswerCallbackQuery(ctx, &tgbot.AnswerCallbackQueryParams{
+		CallbackQueryID: cq.ID,
+		Text:            fmt.Sprintf("❌ 回答错误，请 %d 秒后重试", secs),
+		ShowAlert:       true,
+	})
+
+	if hasMsg {
+		h.bot.DeleteMessage(ctx, &tgbot.DeleteMessageParams{
+			ChatID:    chatID,
+			MessageID: msgID,
+		})
 	}
 }
 

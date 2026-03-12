@@ -21,6 +21,7 @@
 - **双向消息转发** — 用户私聊 Bot 的消息自动转发到管理群组，管理员回复自动推送给用户
 - **论坛话题隔离** — 每个用户独享一个 Forum Topic，对话上下文清晰不混乱
 - **富媒体支持** — 文字、图片、视频、文件、语音、贴纸、位置、联系人、媒体组全类型覆盖
+- **人机验证** — 新用户首次对话需完成数学 CAPTCHA 验证，有效拦截机器人刷消息
 - **频率限制** — 可配置的消息发送间隔，防止滥用刷屏
 - **管理员工具** — 广播消息 / 用户统计 / 对话清理 / 话题重置，一套命令搞定
 - **封禁机制** — 支持永久封禁，可配置删除话题即封禁
@@ -85,8 +86,9 @@ make run
 ### 用户端
 
 1. 在 Telegram 中搜索你的 Bot 并发送 `/start`
-2. 直接发送任意消息，Bot 会自动转发给管理员
-3. 管理员的回复会通过 Bot 推送给你
+2. 若启用了人机验证，需先完成数学验证题（点击正确答案按钮）
+3. 验证通过后即可发送任意消息，Bot 会自动转发给管理员
+4. 管理员的回复会通过 Bot 推送给你
 
 ### 管理端
 
@@ -113,6 +115,7 @@ make run
 | `ADMIN_USER_IDS` | 管理员用户 ID，逗号分隔 | — | ✅ |
 | `APP_NAME` | 应用名称 | `TelegramCommunicationBot` | |
 | `WELCOME_MESSAGE` | 用户首次 `/start` 时的欢迎语 | 默认中文欢迎词 | |
+| `CAPTCHA_ENABLED` | 启用新用户人机验证 | `false` | |
 | `MESSAGE_INTERVAL` | 用户消息发送最小间隔（秒） | `5` | |
 | `DELETE_TOPIC_AS_FOREVER_BAN` | 删除话题时永久封禁用户 | `false` | |
 | `DELETE_USER_MESSAGE_ON_CLEAR_CMD` | `/clear` 时同时删除消息 | `false` | |
@@ -135,6 +138,7 @@ telegram-communication-bot/
 │   ├── services/
 │   │   ├── message.go        # 消息转发 / 映射 / 媒体组
 │   │   ├── forum.go          # 论坛话题管理
+│   │   ├── captcha.go        # 人机验证（CAPTCHA）
 │   │   └── ratelimiter.go    # 速率限制
 │   ├── database/database.go  # 数据库操作（GORM + SQLite）
 │   └── models/models.go      # 数据模型定义

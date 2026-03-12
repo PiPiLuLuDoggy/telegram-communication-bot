@@ -21,6 +21,7 @@ User messages are automatically forwarded to an admin group; admins reply direct
 - **Bidirectional Forwarding** — Messages sent to the bot are relayed to the admin group; admin replies are pushed back to the user
 - **Forum Topic Isolation** — Each user gets a dedicated Forum Topic, keeping conversations organized
 - **Rich Media Support** — Text, photos, videos, documents, voice, stickers, locations, contacts, and media groups
+- **CAPTCHA Verification** — New users must solve a math CAPTCHA before chatting, effectively blocking automated spam
 - **Rate Limiting** — Configurable message cooldown to prevent spam
 - **Admin Toolkit** — Broadcast / statistics / conversation cleanup / topic reset, all via commands
 - **Ban System** — Permanent bans with optional "delete topic = ban" policy
@@ -85,8 +86,9 @@ make run
 ### For Users
 
 1. Search for your bot on Telegram and send `/start`
-2. Send any message — it will be forwarded to the admin team
-3. Admin replies will be delivered back through the bot
+2. If CAPTCHA is enabled, solve the math challenge by tapping the correct answer button
+3. Once verified, send any message — it will be forwarded to the admin team
+4. Admin replies will be delivered back through the bot
 
 ### For Admins
 
@@ -113,6 +115,7 @@ make run
 | `ADMIN_USER_IDS` | Comma-separated admin user IDs | — | ✅ |
 | `APP_NAME` | Application name | `TelegramCommunicationBot` | |
 | `WELCOME_MESSAGE` | Welcome message on `/start` | Default Chinese text | |
+| `CAPTCHA_ENABLED` | Enable CAPTCHA verification for new users | `false` | |
 | `MESSAGE_INTERVAL` | Min interval between user messages (sec) | `5` | |
 | `DELETE_TOPIC_AS_FOREVER_BAN` | Permanently ban user on topic deletion | `false` | |
 | `DELETE_USER_MESSAGE_ON_CLEAR_CMD` | Delete messages on `/clear` | `false` | |
@@ -135,6 +138,7 @@ telegram-communication-bot/
 │   ├── services/
 │   │   ├── message.go        # Message forwarding / mapping / media groups
 │   │   ├── forum.go          # Forum topic management
+│   │   ├── captcha.go        # CAPTCHA verification
 │   │   └── ratelimiter.go    # Rate limiting
 │   ├── database/database.go  # Database operations (GORM + SQLite)
 │   └── models/models.go      # Data model definitions

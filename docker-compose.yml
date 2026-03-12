@@ -20,6 +20,9 @@ services:
       DELETE_USER_MESSAGE_ON_CLEAR_CMD: ${DELETE_USER_MESSAGE_ON_CLEAR_CMD:-false}
       MESSAGE_INTERVAL: ${MESSAGE_INTERVAL:-5}
 
+      # CAPTCHA Settings
+      CAPTCHA_ENABLED: ${CAPTCHA_ENABLED:-false}
+
       # Database Settings
       DATABASE_PATH: /app/data/bot.db
 

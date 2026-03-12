@@ -32,6 +32,9 @@ type Config struct {
 	Port       int
 	WebhookURL string
 
+	// CAPTCHA Settings
+	CaptchaEnabled bool
+
 	// Debug mode
 	Debug bool
 }
@@ -90,6 +93,9 @@ func LoadConfig() (*Config, error) {
 	// Load server settings
 	config.Port = getIntEnv("PORT", 8090)
 	config.WebhookURL = os.Getenv("WEBHOOK_URL")
+
+	// CAPTCHA settings
+	config.CaptchaEnabled = getBoolEnv("CAPTCHA_ENABLED", false)
 
 	// Debug mode
 	config.Debug = getBoolEnv("DEBUG", false)

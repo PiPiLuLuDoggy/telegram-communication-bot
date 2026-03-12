@@ -175,7 +175,9 @@ func (h *Handlers) handleUserMessage(ctx context.Context, message *models.Messag
 	userID := message.From.ID
 	chatID := message.Chat.ID
 
-	if h.rateLimiter.IsEnabled() {
+	isMediaGroup := message.MediaGroupID != ""
+
+	if h.rateLimiter.IsEnabled() && !isMediaGroup {
 		canSend, waitTime := h.rateLimiter.CheckAndRecord(userID)
 		if !canSend {
 			h.sendMessage(ctx, chatID, h.rateLimiter.FormatCooldownMessage(waitTime))

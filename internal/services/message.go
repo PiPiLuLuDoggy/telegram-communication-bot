@@ -191,17 +191,20 @@ func (ms *MessageService) processMediaGroup(ctx context.Context, b *tgbot.Bot, m
 		return
 	}
 
-	for _, msg := range messages {
-		_, err := b.ForwardMessage(ctx, &tgbot.ForwardMessageParams{
-			ChatID:          groupChatID,
-			FromChatID:      msg.ChatID,
-			MessageID:       msg.MessageID,
-			MessageThreadID: messageThreadID,
-		})
-		if err != nil {
-			log.Printf("Error forwarding media group message: %v", err)
-			continue
-		}
+	messageIDs := make([]int, len(messages))
+	for i, msg := range messages {
+		messageIDs[i] = msg.MessageID
+	}
+
+	_, err = b.CopyMessages(ctx, &tgbot.CopyMessagesParams{
+		ChatID:          groupChatID,
+		FromChatID:      messages[0].ChatID,
+		MessageIDs:      messageIDs,
+		MessageThreadID: messageThreadID,
+	})
+	if err != nil {
+		log.Printf("Error copying media group messages: %v", err)
+		return
 	}
 
 	if err := ms.db.DeleteMediaGroupMessages(mediaGroupID); err != nil {

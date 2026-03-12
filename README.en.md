@@ -1,156 +1,198 @@
+<div align="center">
+
 # Telegram Communication Bot
 
-A complete Telegram customer service bot that supports bidirectional message forwarding between users and administrators, forum topic management, and more.
+**Lightweight, efficient, and ready-to-deploy bidirectional message relay bot for Telegram**
 
-**Language**: [中文](README.md) | **English**
+User messages are automatically forwarded to an admin group; admins reply directly in forum topics — seamless two-way communication with zero friction.
+
+[![Go Version](https://img.shields.io/badge/Go-1.23-00ADD8?style=flat-square&logo=go)](https://go.dev/)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue?style=flat-square)](LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker)](docker-compose.yml)
+
+[**English**](README.en.md) | [中文](README.md)
+
+</div>
+
+---
 
 ## Features
 
-- 💬 **Bidirectional Message Forwarding**: User messages automatically forwarded to admin group
-- 🎯 **Forum Topic Management**: Create dedicated topics for each user with automatic user info display
-- 🛡️ **Anti-Abuse Mechanism**: Message rate limiting to prevent spam
-- 📡 **Admin Functions**: Broadcast messages, user statistics, conversation management, topic reset
-- 🚫 **User Ban System**: Supports permanent and temporary bans
-- 🔄 **Auto Recovery**: Automatically creates new topics when users message after topic deletion
-- 👤 **User Info Display**: New topics automatically show username and ID information
+- **Bidirectional Forwarding** — Messages sent to the bot are relayed to the admin group; admin replies are pushed back to the user
+- **Forum Topic Isolation** — Each user gets a dedicated Forum Topic, keeping conversations organized
+- **Rich Media Support** — Text, photos, videos, documents, voice, stickers, locations, contacts, and media groups
+- **Rate Limiting** — Configurable message cooldown to prevent spam
+- **Admin Toolkit** — Broadcast / statistics / conversation cleanup / topic reset, all via commands
+- **Ban System** — Permanent bans with optional "delete topic = ban" policy
+- **Auto Recovery** — If a topic is accidentally deleted, a new one is created on the user's next message
+- **Dual Mode** — Supports both Polling and Webhook, adapting to any deployment scenario
+- **Lightweight** — Single binary + SQLite, one-command Docker deployment, no external dependencies
 
-## Quick Deployment
+## Architecture
 
-### 1. Prerequisites
+<div align="center">
+<img src="architecture.png" alt="System Architecture" width="85%">
+</div>
 
-#### Create Telegram Bot
-1. Contact [@BotFather](https://t.me/botfather)
-2. Send `/newbot` to create a bot
-3. Get the Bot Token
+## Quick Start
 
-#### Get Admin Group ID
-1. Create a group and enable forum functionality
-2. Add the bot to the group and make it an admin
-3. Send a message to the group, use [@userinfobot](https://t.me/userinfobot) to get the group ID (negative number)
+### Prerequisites
 
-#### Get Admin User ID
-Contact [@userinfobot](https://t.me/userinfobot) to get your user ID
+| Step | Action | Purpose |
+|------|--------|---------|
+| 1 | Create a bot via [@BotFather](https://t.me/botfather) | Obtain `BOT_TOKEN` |
+| 2 | Create a Supergroup with Topics enabled | Add the bot as an admin |
+| 3 | Get the group ID (negative number) | Use [@userinfobot](https://t.me/userinfobot) |
+| 4 | Get your admin user ID | Same as above |
 
-### 2. Deploy with Docker Compose
+### Deploy with Docker Compose (Recommended)
 
 ```bash
-# 1. Clone the project (or download the code)
 git clone https://github.com/PiPiLuLuDoggy/telegram-communication-bot.git
 cd telegram-communication-bot
 
-# 2. Copy configuration file
 cp .env.example .env
-
-# 3. Edit configuration file
-nano .env
 ```
 
-### 3. Configure Environment Variables
-
-Edit the `.env` file with the following required information:
+Edit `.env` with the required values:
 
 ```bash
-# Required Configuration
-BOT_TOKEN=your_bot_token_here
-ADMIN_GROUP_ID=-1001234567890  # Admin group ID (negative number)
-ADMIN_USER_IDS=123456789,987654321  # Admin user IDs (comma separated)
-
-# Optional Configuration
-WELCOME_MESSAGE=Welcome to our customer service bot!
-MESSAGE_INTERVAL=5     # User message interval (seconds)
+BOT_TOKEN=your_bot_token
+ADMIN_GROUP_ID=-1001234567890
+ADMIN_USER_IDS=123456789
 ```
 
-### 4. Start Service
+Start the bot:
 
 ```bash
-# Start the bot
-docker-compose up -d
-
-# View logs
-docker-compose logs -f telegram-bot
+docker compose up -d
 ```
+
+### Build from Source
+
+```bash
+# Build
+make build
+
+# Run
+make run
+```
+
+> Polling mode is used by default. Set `WEBHOOK_URL` to enable Webhook mode.
+
+## Usage
+
+### For Users
+
+1. Search for your bot on Telegram and send `/start`
+2. Send any message — it will be forwarded to the admin team
+3. Admin replies will be delivered back through the bot
+
+### For Admins
+
+1. View incoming user messages in the admin group — one forum topic per user
+2. New topics automatically display user info (username, ID)
+3. Reply within the topic — your message is forwarded to the user
 
 ## Admin Commands
 
-| Command | Description | Example |
-|---------|-------------|---------|
+| Command | Description | Usage |
+|---------|-------------|-------|
 | `/start` | Check bot status | `/start` |
-| `/clear <user_id>` | Clear user conversation | `/clear 123456789` |
-| `/reset <user_id>` | Reset user topic ID (fix deleted topic issues) | `/reset 123456789` |
-| `/broadcast` | Broadcast message | Reply to a message then send `/broadcast` |
-| `/stats` | View statistics | `/stats` |
+| `/stats` | View user & conversation statistics | `/stats` |
+| `/broadcast` | Broadcast a message to all users | Reply to a message, then send `/broadcast` |
+| `/clear <id>` | Clear a user's conversation | `/clear 123456789` |
+| `/reset <id>` | Reset a user's topic (fix deleted topic issues) | `/reset 123456789` |
 
-## Usage Instructions
+## Configuration
 
-### User Side
-1. Search and start your bot
-2. Send `/start` to begin
-3. Send messages directly to the bot
+| Variable | Description | Default | Required |
+|----------|-------------|---------|:--------:|
+| `BOT_TOKEN` | Telegram Bot Token | — | ✅ |
+| `ADMIN_GROUP_ID` | Admin group ID (negative) | — | ✅ |
+| `ADMIN_USER_IDS` | Comma-separated admin user IDs | — | ✅ |
+| `APP_NAME` | Application name | `TelegramCommunicationBot` | |
+| `WELCOME_MESSAGE` | Welcome message on `/start` | Default Chinese text | |
+| `MESSAGE_INTERVAL` | Min interval between user messages (sec) | `5` | |
+| `DELETE_TOPIC_AS_FOREVER_BAN` | Permanently ban user on topic deletion | `false` | |
+| `DELETE_USER_MESSAGE_ON_CLEAR_CMD` | Delete messages on `/clear` | `false` | |
+| `DATABASE_PATH` | SQLite database path | `./data/bot.db` | |
+| `PORT` | Webhook listen port | `8090` | |
+| `WEBHOOK_URL` | Webhook URL (empty = Polling mode) | — | |
+| `DEBUG` | Debug mode | `false` | |
 
-### Admin Side
-1. View user messages in the admin group (one topic per user)
-2. Each new topic automatically displays user information:
-   ```
-   📋 User Info
+## Project Structure
 
-   👤 Username: @username
-   🆔 User ID: 123456789
-   ```
-3. Reply directly in the topic to users
-4. Use admin commands to manage users and system
-5. If a topic is accidentally deleted, users can send new messages to automatically create a new topic
-
-## Configuration Options
-
-| Environment Variable | Description | Default Value | Required |
-|---------------------|-------------|---------------|----------|
-| `BOT_TOKEN` | Bot Token | - | ✅ |
-| `ADMIN_GROUP_ID` | Admin Group ID (negative) | - | ✅ |
-| `ADMIN_USER_IDS` | Admin User IDs (comma separated) | - | ✅ |
-| `APP_NAME` | Application Name | TelegramCommunicationBot | ❌ |
-| `WELCOME_MESSAGE` | User Welcome Message | Default Chinese Welcome | ❌ |
-| `DELETE_TOPIC_AS_FOREVER_BAN` | Permanently ban user when deleting topic | false | ❌ |
-| `DELETE_USER_MESSAGE_ON_CLEAR_CMD` | Delete user messages on clear command | false | ❌ |
-| `MESSAGE_INTERVAL` | User message sending interval (seconds) | 5 | ❌ |
-| `DATABASE_PATH` | Database file path | ./data/bot.db | ❌ |
-| `PORT` | Service port (Webhook mode) | 8090 | ❌ |
-| `WEBHOOK_URL` | Webhook URL (optional) | - | ❌ |
-| `DEBUG` | Debug mode (enable detailed logging) | true | ❌ |
+```
+telegram-communication-bot/
+├── cmd/bot/main.go           # Entrypoint
+├── internal/
+│   ├── bot/bot.go            # Bot core (Polling / Webhook)
+│   ├── config/config.go      # Configuration loading & validation
+│   ├── handlers/
+│   │   ├── handlers.go       # Message routing & dispatch
+│   │   └── admin.go          # Admin command handlers
+│   ├── services/
+│   │   ├── message.go        # Message forwarding / mapping / media groups
+│   │   ├── forum.go          # Forum topic management
+│   │   └── ratelimiter.go    # Rate limiting
+│   ├── database/database.go  # Database operations (GORM + SQLite)
+│   └── models/models.go      # Data model definitions
+├── docker-compose.yml
+├── Dockerfile
+├── Makefile
+└── .env.example
+```
 
 ## FAQ
 
-**Q: Bot not responding?**
-A: Check if the Bot Token is correct, view logs: `docker-compose logs telegram-bot`
+<details>
+<summary><b>Bot not responding?</b></summary>
 
-**Q: Cannot create forum topics?**
-A: Ensure: 1) Group has forum functionality enabled 2) Bot has admin permissions 3) Group ID is correct (negative number)
+Verify your `BOT_TOKEN` and check the container logs:
 
-**Q: Accidentally deleted a user topic?**
-A: Users can send new messages to automatically create new topics. Or use `/reset <user_id>` command to manually reset
-
-**Q: User messages not reaching admins?**
-A: Check if the topic was deleted, use `/reset <user_id>` to reset user status
-
-
-**Q: How to stop the bot?**
 ```bash
-docker-compose down
+docker compose logs -f telegram-bot
 ```
+</details>
 
-**Q: How to backup data?**
+<details>
+<summary><b>Cannot create forum topics?</b></summary>
+
+Make sure:
+1. The group has the "Topics" feature enabled (Group Settings → Topics)
+2. The bot has admin permissions in the group
+3. `ADMIN_GROUP_ID` is correct and negative
+</details>
+
+<details>
+<summary><b>Accidentally deleted a user's topic?</b></summary>
+
+The user's next message will automatically create a new topic. You can also manually run:
+
+```
+/reset <user_id>
+```
+</details>
+
+<details>
+<summary><b>How to back up data?</b></summary>
+
 ```bash
 docker cp telegram-communication-bot:/app/data/bot.db ./backup.db
 ```
+</details>
 
-## Update Bot
+<details>
+<summary><b>How to update to the latest version?</b></summary>
 
 ```bash
-# Stop service
-docker-compose down
-
-# Pull latest code
+docker compose down
 git pull
-
-# Rebuild and start
-docker-compose up -d --build
+docker compose up -d --build
 ```
+</details>
+
+## License
+
+This project is licensed under the [Apache License 2.0](LICENSE).

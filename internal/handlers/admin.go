@@ -1,45 +1,43 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"strconv"
 	"strings"
-	"telegram-communication-bot/internal/models"
+	dbmodels "telegram-communication-bot/internal/models"
+	"time"
 
-	api "github.com/OvyFlash/telegram-bot-api"
+	tgbot "github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 )
 
-// handleClearCommand handles the /clear command for admins
-func (h *Handlers) handleClearCommand(message *api.Message, args string) {
+func (h *Handlers) handleClearCommand(ctx context.Context, message *models.Message, args string) {
 	chatID := message.Chat.ID
 
 	if args == "" {
-		h.sendMessage(chatID, "❌ 请提供用户ID\n用法: /clear <user_id>")
+		h.sendMessage(ctx, chatID, "❌ 请提供用户ID\n用法: /clear <user_id>")
 		return
 	}
 
 	userID, err := strconv.ParseInt(args, 10, 64)
 	if err != nil {
-		h.sendMessage(chatID, "❌ 无效的用户ID")
+		h.sendMessage(ctx, chatID, "❌ 无效的用户ID")
 		return
 	}
 
-	// Get user info
 	user, err := h.db.GetUser(userID)
 	if err != nil {
-		h.sendMessage(chatID, "❌ 用户不存在")
+		h.sendMessage(ctx, chatID, "❌ 用户不存在")
 		return
 	}
 
-	// Delete forum topic if configured
 	if h.config.DeleteTopicAsForeverBan && user.MessageThreadID != 0 {
-		if err := h.forumService.DeleteForumTopic(user.MessageThreadID); err != nil {
+		if err := h.forumService.DeleteForumTopic(ctx, user.MessageThreadID); err != nil {
 			log.Printf("Error deleting forum topic: %v", err)
 		}
-
-		// Ban user permanently if configured
-		banStatus := &models.BanStatus{
+		banStatus := &dbmodels.BanStatus{
 			UserID:   userID,
 			IsBanned: true,
 			Reason:   "Forum topic deleted by admin",
@@ -48,18 +46,14 @@ func (h *Handlers) handleClearCommand(message *api.Message, args string) {
 			log.Printf("Error banning user: %v", err)
 		}
 	} else {
-		// Just close the forum topic
 		if user.MessageThreadID != 0 {
-			if err := h.forumService.CloseForumTopic(user.MessageThreadID); err != nil {
+			if err := h.forumService.CloseForumTopic(ctx, user.MessageThreadID); err != nil {
 				log.Printf("Error closing forum topic: %v", err)
 			}
 		}
 	}
 
-	// Delete user messages if configured
 	if h.config.DeleteUserMessageOnClearCmd {
-		// This would require implementing message deletion functionality
-		// For now, we'll just log it
 		log.Printf("Would delete messages for user %d", userID)
 	}
 
@@ -68,52 +62,45 @@ func (h *Handlers) handleClearCommand(message *api.Message, args string) {
 		action = "已删除并永久禁止"
 	}
 
-	h.sendMessage(chatID, fmt.Sprintf("✅ 用户 %d (%s) 的对话%s", userID, user.FirstName, action))
+	h.sendMessage(ctx, chatID, fmt.Sprintf("✅ 用户 %d (%s) 的对话%s", userID, user.FirstName, action))
 }
 
-// handleBroadcastCommand handles the /broadcast command
-func (h *Handlers) handleBroadcastCommand(message *api.Message) {
+func (h *Handlers) handleBroadcastCommand(ctx context.Context, message *models.Message) {
 	chatID := message.Chat.ID
 
-	// Check if this is a reply to a message
 	if message.ReplyToMessage == nil {
-		h.sendMessage(chatID, "❌ 请回复一条消息以进行广播")
+		h.sendMessage(ctx, chatID, "❌ 请回复一条消息以进行广播")
 		return
 	}
 
-	// Get all users
 	users, err := h.db.GetAllUsers()
 	if err != nil {
-		h.sendMessage(chatID, "❌ 获取用户列表失败")
+		h.sendMessage(ctx, chatID, "❌ 获取用户列表失败")
 		log.Printf("Error getting users for broadcast: %v", err)
 		return
 	}
 
 	if len(users) == 0 {
-		h.sendMessage(chatID, "❌ 没有用户可以广播")
+		h.sendMessage(ctx, chatID, "❌ 没有用户可以广播")
 		return
 	}
 
-	// Start broadcasting
-	h.sendMessage(chatID, fmt.Sprintf("📡 开始广播消息给 %d 个用户...", len(users)))
+	h.sendMessage(ctx, chatID, fmt.Sprintf("📡 开始广播消息给 %d 个用户...", len(users)))
 
-	go h.performBroadcast(message.ReplyToMessage, users, chatID)
+	go h.performBroadcast(context.Background(), message.ReplyToMessage, users, chatID)
 }
 
-// performBroadcast performs the actual broadcast operation
-func (h *Handlers) performBroadcast(broadcastMsg *api.Message, users []models.User, adminChatID int64) {
+func (h *Handlers) performBroadcast(ctx context.Context, broadcastMsg *models.Message, users []dbmodels.User, adminChatID int64) {
 	successCount := 0
 	failCount := 0
 
 	for _, user := range users {
-		// Skip banned users
 		if h.db.IsUserBanned(user.UserID) {
 			failCount++
 			continue
 		}
 
-		// Forward the message to each user
-		_, err := h.messageService.ForwardMessageToUser(h.bot, broadcastMsg, user.UserID)
+		_, err := h.messageService.ForwardMessageToUser(ctx, h.bot, broadcastMsg, user.UserID)
 		if err != nil {
 			log.Printf("Error broadcasting to user %d: %v", user.UserID, err)
 			failCount++
@@ -121,45 +108,35 @@ func (h *Handlers) performBroadcast(broadcastMsg *api.Message, users []models.Us
 			successCount++
 		}
 
-		// Small delay to avoid rate limiting
-		// time.Sleep(50 * time.Millisecond) // Uncomment if needed
+		time.Sleep(50 * time.Millisecond)
 	}
 
-	// Send summary to admin
 	summary := fmt.Sprintf("📡 广播完成!\n✅ 成功: %d\n❌ 失败: %d", successCount, failCount)
-	h.sendMessage(adminChatID, summary)
+	h.sendMessage(ctx, adminChatID, summary)
 }
 
-// handleStatsCommand handles the /stats command
-func (h *Handlers) handleStatsCommand(message *api.Message) {
+func (h *Handlers) handleStatsCommand(ctx context.Context, message *models.Message) {
 	chatID := message.Chat.ID
 
-	// Get user statistics
-	users, err := h.db.GetAllUsers()
+	totalUsers, err := h.db.CountUsers()
 	if err != nil {
-		h.sendMessage(chatID, "❌ 获取统计信息失败")
-		log.Printf("Error getting stats: %v", err)
+		h.sendMessage(ctx, chatID, "❌ 获取统计信息失败")
+		log.Printf("Error counting users: %v", err)
 		return
 	}
 
-	totalUsers := len(users)
-	activeUsers := 0
-	premiumUsers := 0
-	bannedUsers := 0
-
-	for _, user := range users {
-		if h.db.IsUserBanned(user.UserID) {
-			bannedUsers++
-		} else {
-			activeUsers++
-		}
-
-		if user.IsPremium {
-			premiumUsers++
-		}
+	bannedUsers, err := h.db.CountBannedUsers()
+	if err != nil {
+		log.Printf("Error counting banned users: %v", err)
 	}
 
-	// Get active topics count
+	premiumUsers, err := h.db.CountPremiumUsers()
+	if err != nil {
+		log.Printf("Error counting premium users: %v", err)
+	}
+
+	activeUsers := totalUsers - bannedUsers
+
 	activeTopics, err := h.forumService.GetAllActiveTopics()
 	if err != nil {
 		log.Printf("Error getting active topics: %v", err)
@@ -189,13 +166,13 @@ func (h *Handlers) handleStatsCommand(message *api.Message) {
 		h.getBoolString(h.config.DeleteTopicAsForeverBan),
 		h.getBoolString(h.config.DeleteUserMessageOnClearCmd))
 
-	msg := api.NewMessage(chatID, statsText)
-	msg.ParseMode = api.ModeHTML
-	h.bot.Send(msg)
+	h.bot.SendMessage(ctx, &tgbot.SendMessageParams{
+		ChatID:    chatID,
+		Text:      statsText,
+		ParseMode: models.ParseModeHTML,
+	})
 }
 
-
-// getBoolString returns a Chinese string representation of a boolean
 func (h *Handlers) getBoolString(value bool) string {
 	if value {
 		return "启用"
@@ -203,11 +180,8 @@ func (h *Handlers) getBoolString(value bool) string {
 	return "禁用"
 }
 
-// Additional admin helper methods
-
-// banUser bans a user
 func (h *Handlers) banUser(userID int64, reason string) error {
-	banStatus := &models.BanStatus{
+	banStatus := &dbmodels.BanStatus{
 		UserID:   userID,
 		IsBanned: true,
 		Reason:   reason,
@@ -215,9 +189,8 @@ func (h *Handlers) banUser(userID int64, reason string) error {
 	return h.db.CreateOrUpdateBanStatus(banStatus)
 }
 
-// unbanUser unbans a user
 func (h *Handlers) unbanUser(userID int64) error {
-	banStatus := &models.BanStatus{
+	banStatus := &dbmodels.BanStatus{
 		UserID:   userID,
 		IsBanned: false,
 		Reason:   "",
@@ -225,8 +198,7 @@ func (h *Handlers) unbanUser(userID int64) error {
 	return h.db.CreateOrUpdateBanStatus(banStatus)
 }
 
-// getUserInfo formats user information for display
-func (h *Handlers) getUserInfo(user *models.User) string {
+func (h *Handlers) getUserInfo(user *dbmodels.User) string {
 	var info strings.Builder
 
 	info.WriteString(fmt.Sprintf("👤 <b>用户信息</b>\n\n"))
@@ -253,7 +225,6 @@ func (h *Handlers) getUserInfo(user *models.User) string {
 		info.WriteString(fmt.Sprintf("💬 <b>对话ID:</b> %d\n", user.MessageThreadID))
 	}
 
-	// Check ban status
 	if h.db.IsUserBanned(user.UserID) {
 		info.WriteString("🚫 <b>状态:</b> 已禁止\n")
 	} else {
@@ -263,34 +234,31 @@ func (h *Handlers) getUserInfo(user *models.User) string {
 	return info.String()
 }
 
-// handleResetCommand handles the /reset command to reset user's thread ID
-func (h *Handlers) handleResetCommand(message *api.Message, args string) {
+func (h *Handlers) handleResetCommand(ctx context.Context, message *models.Message, args string) {
 	chatID := message.Chat.ID
 
 	if args == "" {
-		h.sendMessage(chatID, "❌ 请提供用户ID\n用法: /reset <user_id>")
+		h.sendMessage(ctx, chatID, "❌ 请提供用户ID\n用法: /reset <user_id>")
 		return
 	}
 
 	userID, err := strconv.ParseInt(args, 10, 64)
 	if err != nil {
-		h.sendMessage(chatID, "❌ 无效的用户ID")
+		h.sendMessage(ctx, chatID, "❌ 无效的用户ID")
 		return
 	}
 
-	// Get user info
 	user, err := h.db.GetUser(userID)
 	if err != nil {
-		h.sendMessage(chatID, "❌ 用户不存在")
+		h.sendMessage(ctx, chatID, "❌ 用户不存在")
 		return
 	}
 
-	// Reset user's thread ID
 	if err := h.forumService.ResetUserThreadID(userID); err != nil {
-		h.sendMessage(chatID, fmt.Sprintf("❌ 重置用户 %d 的对话ID失败: %v", userID, err))
+		h.sendMessage(ctx, chatID, fmt.Sprintf("❌ 重置用户 %d 的对话ID失败: %v", userID, err))
 		log.Printf("Error resetting thread ID for user %d: %v", userID, err)
 		return
 	}
 
-	h.sendMessage(chatID, fmt.Sprintf("✅ 已重置用户 %d (%s) 的对话ID\n用户下次发消息时将创建新的对话", userID, user.FirstName))
+	h.sendMessage(ctx, chatID, fmt.Sprintf("✅ 已重置用户 %d (%s) 的对话ID\n用户下次发消息时将创建新的对话", userID, user.FirstName))
 }

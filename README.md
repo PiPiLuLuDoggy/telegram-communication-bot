@@ -1,156 +1,198 @@
-# Telegram Communication Bot
+<div align="center">
 
-一个完整的 Telegram 客服机器人，支持用户与管理员之间的双向消息转发、论坛话题管理等功能。
+# Telegram 双向机器人
 
-**语言选择**: **中文** | [English](README.en.md)
+**轻量、高效、开箱即用的 Telegram 双向消息转发机器人**
 
-## 功能特性
+用户私聊消息自动转发至管理群组，管理员直接在论坛话题中回复——零门槛实现双向沟通。
 
-- 💬 **双向消息转发**：用户消息自动转发到管理群组
-- 🎯 **论坛话题管理**：为每个用户创建专属话题，自动显示用户信息
-- 🛡️ **防滥用机制**：消息频率限制，防止用户刷屏
-- 📡 **管理功能**：广播消息、用户统计、对话管理、话题重置
-- 🚫 **用户封禁**：支持永久和临时封禁
-- 🔄 **自动恢复**：删除话题后用户重新发消息自动创建新话题
-- 👤 **用户信息展示**：新话题自动显示用户名和ID信息
+[![Go Version](https://img.shields.io/badge/Go-1.23-00ADD8?style=flat-square&logo=go)](https://go.dev/)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue?style=flat-square)](LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker)](docker-compose.yml)
 
-## 快速部署
+[English](README.en.md) | **中文**
 
-### 1. 准备工作
+</div>
 
-#### 创建 Telegram Bot
-1. 联系 [@BotFather](https://t.me/botfather)
-2. 发送 `/newbot` 创建机器人
-3. 获取 Bot Token
+---
 
-#### 获取管理群组 ID
-1. 创建一个群组，开启论坛功能
-2. 将机器人添加到群组并设为管理员
-3. 发送消息到群组，使用 [@userinfobot](https://t.me/userinfobot) 获取群组 ID（负数）
+## 特性
 
-#### 获取管理员用户 ID
-联系 [@userinfobot](https://t.me/userinfobot) 获取您的用户 ID
+- **双向消息转发** — 用户私聊 Bot 的消息自动转发到管理群组，管理员回复自动推送给用户
+- **论坛话题隔离** — 每个用户独享一个 Forum Topic，对话上下文清晰不混乱
+- **富媒体支持** — 文字、图片、视频、文件、语音、贴纸、位置、联系人、媒体组全类型覆盖
+- **频率限制** — 可配置的消息发送间隔，防止滥用刷屏
+- **管理员工具** — 广播消息 / 用户统计 / 对话清理 / 话题重置，一套命令搞定
+- **封禁机制** — 支持永久封禁，可配置删除话题即封禁
+- **自动容错** — 话题被误删后，用户下次发消息自动创建新话题
+- **双模式运行** — 支持 Polling 轮询和 Webhook 回调，适配不同部署场景
+- **轻量部署** — 单二进制 + SQLite，Docker 一键启动，无外部依赖
 
-### 2. 使用 Docker Compose 部署
+## 架构
+
+<div align="center">
+<img src="architecture.png" alt="System Architecture" width="85%">
+</div>
+
+## 快速开始
+
+### 前置准备
+
+| 步骤 | 操作 | 说明 |
+|------|------|------|
+| 1 | 联系 [@BotFather](https://t.me/botfather) 创建 Bot | 获取 `BOT_TOKEN` |
+| 2 | 创建 Supergroup 并开启论坛功能 | 将 Bot 添加为管理员 |
+| 3 | 获取群组 ID（负数） | 通过 [@userinfobot](https://t.me/userinfobot) 获取 |
+| 4 | 获取管理员用户 ID | 同上 |
+
+### Docker Compose 部署（推荐）
 
 ```bash
-# 1. 克隆项目（或下载代码）
-git clone <your-repo>
+git clone https://github.com/PiPiLuLuDoggy/telegram-communication-bot.git
 cd telegram-communication-bot
 
-# 2. 复制配置文件
 cp .env.example .env
-
-# 3. 编辑配置文件
-nano .env
 ```
 
-### 3. 配置环境变量
-
-编辑 `.env` 文件，填入以下必要信息：
+编辑 `.env`，填入必要配置：
 
 ```bash
-# 必填配置
-BOT_TOKEN=你的机器人Token
-ADMIN_GROUP_ID=-1001234567890  # 管理群组ID（负数）
-ADMIN_USER_IDS=123456789,987654321  # 管理员用户ID（逗号分隔）
-
-# 可选配置
-WELCOME_MESSAGE=欢迎使用我们的客服机器人！
-MESSAGE_INTERVAL=5     # 用户发送消息间隔（秒）
+BOT_TOKEN=your_bot_token
+ADMIN_GROUP_ID=-1001234567890
+ADMIN_USER_IDS=123456789
 ```
 
-### 4. 启动服务
+启动：
 
 ```bash
-# 启动机器人
-docker-compose up -d
-
-# 查看日志
-docker-compose logs -f telegram-bot
+docker compose up -d
 ```
+
+### 本地编译运行
+
+```bash
+# 编译
+make build
+
+# 运行
+make run
+```
+
+> 默认使用 Polling 模式。如需 Webhook，请设置 `WEBHOOK_URL` 环境变量。
+
+## 使用方式
+
+### 用户端
+
+1. 在 Telegram 中搜索你的 Bot 并发送 `/start`
+2. 直接发送任意消息，Bot 会自动转发给管理员
+3. 管理员的回复会通过 Bot 推送给你
+
+### 管理端
+
+1. 在管理群组中查看用户消息——每个用户对应一个论坛话题
+2. 新话题会自动展示用户信息（用户名、ID）
+3. 直接在对应话题中回复即可，消息自动转发给用户
 
 ## 管理员命令
 
-| 命令 | 说明 | 示例 |
+| 命令 | 说明 | 用法 |
 |------|------|------|
-| `/start` | 检查机器人状态 | `/start` |
-| `/clear <用户ID>` | 清理用户对话 | `/clear 123456789` |
-| `/reset <用户ID>` | 重置用户话题ID（修复删除话题问题） | `/reset 123456789` |
-| `/broadcast` | 广播消息 | 回复消息后发送 `/broadcast` |
-| `/stats` | 查看统计信息 | `/stats` |
+| `/start` | 检查 Bot 运行状态 | `/start` |
+| `/stats` | 查看用户 / 对话统计 | `/stats` |
+| `/broadcast` | 向所有用户广播消息 | 回复一条消息后发送 `/broadcast` |
+| `/clear <id>` | 清理用户对话 | `/clear 123456789` |
+| `/reset <id>` | 重置用户话题（修复话题删除问题） | `/reset 123456789` |
 
-## 使用说明
+## 配置参考
 
-### 用户端
-1. 搜索并启动您的机器人
-2. 发送 `/start` 开始使用
-3. 直接发送消息给机器人
+| 变量 | 说明 | 默认值 | 必填 |
+|------|------|--------|:----:|
+| `BOT_TOKEN` | Telegram Bot Token | — | ✅ |
+| `ADMIN_GROUP_ID` | 管理群组 ID（负数） | — | ✅ |
+| `ADMIN_USER_IDS` | 管理员用户 ID，逗号分隔 | — | ✅ |
+| `APP_NAME` | 应用名称 | `TelegramCommunicationBot` | |
+| `WELCOME_MESSAGE` | 用户首次 `/start` 时的欢迎语 | 默认中文欢迎词 | |
+| `MESSAGE_INTERVAL` | 用户消息发送最小间隔（秒） | `5` | |
+| `DELETE_TOPIC_AS_FOREVER_BAN` | 删除话题时永久封禁用户 | `false` | |
+| `DELETE_USER_MESSAGE_ON_CLEAR_CMD` | `/clear` 时同时删除消息 | `false` | |
+| `DATABASE_PATH` | SQLite 数据库路径 | `./data/bot.db` | |
+| `PORT` | Webhook 监听端口 | `8090` | |
+| `WEBHOOK_URL` | Webhook 地址（留空使用 Polling） | — | |
+| `DEBUG` | 调试模式 | `false` | |
 
-### 管理端
-1. 在管理群组中查看用户消息（每个用户一个话题）
-2. 每个新话题会自动显示用户信息：
-   ```
-   📋 用户信息
+## 项目结构
 
-   👤 用户名: @username
-   🆔 用户ID: 123456789
-   ```
-3. 直接在话题中回复用户
-4. 使用管理命令管理用户和系统
-5. 如果误删话题，用户重新发消息会自动创建新话题
-
-## 配置选项
-
-| 环境变量 | 说明 | 默认值 | 必须 |
-|----------|------|--------|------|
-| `BOT_TOKEN` | 机器人Token | - | ✅ |
-| `ADMIN_GROUP_ID` | 管理群组ID（负数） | - | ✅ |
-| `ADMIN_USER_IDS` | 管理员用户ID（逗号分隔） | - | ✅ |
-| `APP_NAME` | 应用名称 | TelegramCommunicationBot | ❌ |
-| `WELCOME_MESSAGE` | 用户欢迎消息 | 默认中文欢迎词 | ❌ |
-| `DELETE_TOPIC_AS_FOREVER_BAN` | 删除话题时永久封禁用户 | false | ❌ |
-| `DELETE_USER_MESSAGE_ON_CLEAR_CMD` | 清理命令时删除用户消息 | false | ❌ |
-| `MESSAGE_INTERVAL` | 用户消息发送间隔（秒） | 5 | ❌ |
-| `DATABASE_PATH` | 数据库文件路径 | ./data/bot.db | ❌ |
-| `PORT` | 服务端口（Webhook模式） | 8090 | ❌ |
-| `WEBHOOK_URL` | Webhook地址（可选） | - | ❌ |
-| `DEBUG` | 调试模式（启用详细日志） | true | ❌ |
+```
+telegram-communication-bot/
+├── cmd/bot/main.go           # 入口
+├── internal/
+│   ├── bot/bot.go            # Bot 核心（Polling / Webhook）
+│   ├── config/config.go      # 配置加载与校验
+│   ├── handlers/
+│   │   ├── handlers.go       # 消息路由与分发
+│   │   └── admin.go          # 管理员命令处理
+│   ├── services/
+│   │   ├── message.go        # 消息转发 / 映射 / 媒体组
+│   │   ├── forum.go          # 论坛话题管理
+│   │   └── ratelimiter.go    # 速率限制
+│   ├── database/database.go  # 数据库操作（GORM + SQLite）
+│   └── models/models.go      # 数据模型定义
+├── docker-compose.yml
+├── Dockerfile
+├── Makefile
+└── .env.example
+```
 
 ## 常见问题
 
-**Q: 机器人无响应？**
-A: 检查 Bot Token 是否正确，查看日志 `docker-compose logs telegram-bot`
+<details>
+<summary><b>Bot 无响应？</b></summary>
 
-**Q: 无法创建论坛话题？**
-A: 确保：1）群组开启了论坛功能 2）机器人有管理员权限 3）群组ID正确（负数）
+检查 `BOT_TOKEN` 是否正确，查看容器日志：
 
-**Q: 误删了用户话题怎么办？**
-A: 用户重新发消息时会自动创建新话题。或使用 `/reset <用户ID>` 命令手动重置
-
-**Q: 用户发消息后管理员收不到？**
-A: 检查话题是否被删除，使用 `/reset <用户ID>` 重置用户状态
-
-
-**Q: 如何停止机器人？**
 ```bash
-docker-compose down
+docker compose logs -f telegram-bot
 ```
+</details>
 
-**Q: 如何备份数据？**
+<details>
+<summary><b>无法创建论坛话题？</b></summary>
+
+确认以下三点：
+1. 群组已开启「论坛」功能（群组设置 → Topics）
+2. Bot 在群组中拥有管理员权限
+3. `ADMIN_GROUP_ID` 为负数且正确
+</details>
+
+<details>
+<summary><b>误删了用户话题怎么办？</b></summary>
+
+用户下次发消息时会自动创建新话题。也可手动执行：
+
+```
+/reset <用户ID>
+```
+</details>
+
+<details>
+<summary><b>如何备份数据？</b></summary>
+
 ```bash
 docker cp telegram-communication-bot:/app/data/bot.db ./backup.db
 ```
+</details>
 
-## 更新机器人
+<details>
+<summary><b>如何更新到最新版本？</b></summary>
 
 ```bash
-# 停止服务
-docker-compose down
-
-# 拉取最新代码
+docker compose down
 git pull
-
-# 重新构建并启动
-docker-compose up -d --build
+docker compose up -d --build
 ```
+</details>
+
+## License
+
+本项目基于 [Apache License 2.0](LICENSE) 开源。

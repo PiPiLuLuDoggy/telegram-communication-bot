@@ -27,7 +27,7 @@ type ForumStatus struct {
 type MessageMap struct {
 	ID                  uint  `gorm:"primarykey" json:"id"`
 	UserChatMessageID   int   `gorm:"not null" json:"user_chat_message_id"`
-	GroupChatMessageID  int   `gorm:"not null" json:"group_chat_message_id"`
+	GroupChatMessageID  int   `gorm:"not null;index" json:"group_chat_message_id"`
 	UserID              int64 `gorm:"not null;index" json:"user_id"`
 	CreatedAt           time.Time `json:"created_at"`
 }

@@ -18,22 +18,24 @@ type DB struct {
 }
 
 // NewDatabase creates a new database connection
-func NewDatabase(databasePath string) (*DB, error) {
-	// Ensure the directory exists
+func NewDatabase(databasePath string, debug bool) (*DB, error) {
 	dir := filepath.Dir(databasePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create database directory: %w", err)
 	}
 
-	// Configure GORM with custom settings
+	logLevel := logger.Silent
+	if debug {
+		logLevel = logger.Info
+	}
+
 	config := &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logLevel),
 		NowFunc: func() time.Time {
 			return time.Now().Local()
 		},
 	}
 
-	// Open SQLite database with pure-Go driver
 	db, err := gorm.Open(sqlite.Dialector{
 		DriverName: "sqlite",
 		DSN:        databasePath,
@@ -42,18 +44,20 @@ func NewDatabase(databasePath string) (*DB, error) {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	// Configure connection pool
+	// Enable WAL mode and busy timeout for better concurrent performance
+	db.Exec("PRAGMA journal_mode=WAL")
+	db.Exec("PRAGMA busy_timeout=5000")
+
 	sqlDB, err := db.DB()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get underlying sql.DB: %w", err)
 	}
 
-	// Set connection pool settings similar to Python version
-	sqlDB.SetMaxOpenConns(100)
-	sqlDB.SetMaxIdleConns(20)
+	// SQLite only supports one writer at a time; keep pool small to avoid lock contention
+	sqlDB.SetMaxOpenConns(2)
+	sqlDB.SetMaxIdleConns(2)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
-	// Auto-migrate all models
 	if err := models.AutoMigrateAll(db); err != nil {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
@@ -187,4 +191,25 @@ func (db *DB) IsUserBanned(userID int64) bool {
 		return false
 	}
 	return banStatus.IsBanned
+}
+
+// CountUsers returns the total number of users
+func (db *DB) CountUsers() (int64, error) {
+	var count int64
+	err := db.DB.Model(&models.User{}).Count(&count).Error
+	return count, err
+}
+
+// CountPremiumUsers returns the number of premium users
+func (db *DB) CountPremiumUsers() (int64, error) {
+	var count int64
+	err := db.DB.Model(&models.User{}).Where("is_premium = ?", true).Count(&count).Error
+	return count, err
+}
+
+// CountBannedUsers returns the number of banned users
+func (db *DB) CountBannedUsers() (int64, error) {
+	var count int64
+	err := db.DB.Model(&models.BanStatus{}).Where("is_banned = ?", true).Count(&count).Error
+	return count, err
 }

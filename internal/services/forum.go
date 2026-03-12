@@ -1,22 +1,25 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"telegram-communication-bot/internal/config"
 	"telegram-communication-bot/internal/database"
-	"telegram-communication-bot/internal/models"
+	dbmodels "telegram-communication-bot/internal/models"
+	"time"
 
-	api "github.com/OvyFlash/telegram-bot-api"
+	tgbot "github.com/go-telegram/bot"
+	"github.com/go-telegram/bot/models"
 )
 
 type ForumService struct {
-	bot    *api.BotAPI
+	bot    *tgbot.Bot
 	config *config.Config
 	db     *database.DB
 }
 
-func NewForumService(bot *api.BotAPI, config *config.Config, db *database.DB) *ForumService {
+func NewForumService(bot *tgbot.Bot, config *config.Config, db *database.DB) *ForumService {
 	return &ForumService{
 		bot:    bot,
 		config: config,
@@ -24,38 +27,35 @@ func NewForumService(bot *api.BotAPI, config *config.Config, db *database.DB) *F
 	}
 }
 
-// CreateOrGetForumTopic creates a new forum topic for a user or returns existing one
+// CreateOrGetForumTopic creates a new forum topic for a user or returns existing one.
 // Returns: threadID, isNewTopic, error
-func (fs *ForumService) CreateOrGetForumTopic(user *models.User) (int, bool, error) {
+func (fs *ForumService) CreateOrGetForumTopic(ctx context.Context, user *dbmodels.User) (int, bool, error) {
 	if !fs.config.HasAdminGroup() {
 		return 0, false, fmt.Errorf("admin group not configured")
 	}
 
-	// If user already has a thread ID, return it
 	if user.MessageThreadID != 0 {
 		return user.MessageThreadID, false, nil
 	}
 
-	// Create new forum topic
 	topicName := fmt.Sprintf("%s|%d", fs.getFullName(user), user.UserID)
 
-	createTopicConfig := api.NewCreateForumTopicConfig(fs.config.AdminGroupID, topicName)
-
-	topic, err := fs.bot.CreateForumTopic(createTopicConfig)
+	topic, err := fs.bot.CreateForumTopic(ctx, &tgbot.CreateForumTopicParams{
+		ChatID: fs.config.AdminGroupID,
+		Name:   topicName,
+	})
 	if err != nil {
 		return 0, false, fmt.Errorf("failed to create forum topic: %w", err)
 	}
 
 	messageThreadID := topic.MessageThreadID
 
-	// Update user with the new thread ID
 	user.MessageThreadID = messageThreadID
 	if err := fs.db.CreateOrUpdateUser(user); err != nil {
 		log.Printf("Error updating user with thread ID: %v", err)
 	}
 
-	// Create forum status record
-	forumStatus := &models.ForumStatus{
+	forumStatus := &dbmodels.ForumStatus{
 		MessageThreadID: messageThreadID,
 		Status:          "opened",
 	}
@@ -66,29 +66,20 @@ func (fs *ForumService) CreateOrGetForumTopic(user *models.User) (int, bool, err
 	return messageThreadID, true, nil
 }
 
-// CloseForumTopic closes a forum topic
-func (fs *ForumService) CloseForumTopic(messageThreadID int) error {
+func (fs *ForumService) CloseForumTopic(ctx context.Context, messageThreadID int) error {
 	if !fs.config.HasAdminGroup() {
 		return fmt.Errorf("admin group not configured")
 	}
 
-	// Create close forum topic config
-	closeConfig := api.CloseForumTopicConfig{
-		BaseForum: api.BaseForum{
-			ChatConfig: api.ChatConfig{
-				ChatID: fs.config.AdminGroupID,
-			},
-			MessageThreadID: messageThreadID,
-		},
-	}
-
-	_, err := fs.bot.Request(closeConfig)
+	_, err := fs.bot.CloseForumTopic(ctx, &tgbot.CloseForumTopicParams{
+		ChatID:          fs.config.AdminGroupID,
+		MessageThreadID: messageThreadID,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to close forum topic: %w", err)
 	}
 
-	// Update forum status in database
-	forumStatus := &models.ForumStatus{
+	forumStatus := &dbmodels.ForumStatus{
 		MessageThreadID: messageThreadID,
 		Status:          "closed",
 	}
@@ -99,29 +90,20 @@ func (fs *ForumService) CloseForumTopic(messageThreadID int) error {
 	return nil
 }
 
-// ReopenForumTopic reopens a forum topic
-func (fs *ForumService) ReopenForumTopic(messageThreadID int) error {
+func (fs *ForumService) ReopenForumTopic(ctx context.Context, messageThreadID int) error {
 	if !fs.config.HasAdminGroup() {
 		return fmt.Errorf("admin group not configured")
 	}
 
-	// Create reopen forum topic config
-	reopenConfig := api.ReopenForumTopicConfig{
-		BaseForum: api.BaseForum{
-			ChatConfig: api.ChatConfig{
-				ChatID: fs.config.AdminGroupID,
-			},
-			MessageThreadID: messageThreadID,
-		},
-	}
-
-	_, err := fs.bot.Request(reopenConfig)
+	_, err := fs.bot.ReopenForumTopic(ctx, &tgbot.ReopenForumTopicParams{
+		ChatID:          fs.config.AdminGroupID,
+		MessageThreadID: messageThreadID,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to reopen forum topic: %w", err)
 	}
 
-	// Update forum status in database
-	forumStatus := &models.ForumStatus{
+	forumStatus := &dbmodels.ForumStatus{
 		MessageThreadID: messageThreadID,
 		Status:          "opened",
 	}
@@ -132,32 +114,22 @@ func (fs *ForumService) ReopenForumTopic(messageThreadID int) error {
 	return nil
 }
 
-// DeleteForumTopic deletes a forum topic
-func (fs *ForumService) DeleteForumTopic(messageThreadID int) error {
+func (fs *ForumService) DeleteForumTopic(ctx context.Context, messageThreadID int) error {
 	if !fs.config.HasAdminGroup() {
 		return fmt.Errorf("admin group not configured")
 	}
 
-	// Create delete forum topic config
-	deleteConfig := api.DeleteForumTopicConfig{
-		BaseForum: api.BaseForum{
-			ChatConfig: api.ChatConfig{
-				ChatID: fs.config.AdminGroupID,
-			},
-			MessageThreadID: messageThreadID,
-		},
-	}
-
-	_, err := fs.bot.Request(deleteConfig)
+	_, err := fs.bot.DeleteForumTopic(ctx, &tgbot.DeleteForumTopicParams{
+		ChatID:          fs.config.AdminGroupID,
+		MessageThreadID: messageThreadID,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to delete forum topic: %w", err)
 	}
 
-	// Remove from database after successful deletion
-	return fs.db.DB.Where("message_thread_id = ?", messageThreadID).Delete(&models.ForumStatus{}).Error
+	return fs.db.DB.Where("message_thread_id = ?", messageThreadID).Delete(&dbmodels.ForumStatus{}).Error
 }
 
-// GetForumTopicStatus gets the status of a forum topic
 func (fs *ForumService) GetForumTopicStatus(messageThreadID int) (string, error) {
 	status, err := fs.db.GetForumStatus(messageThreadID)
 	if err != nil {
@@ -166,7 +138,6 @@ func (fs *ForumService) GetForumTopicStatus(messageThreadID int) (string, error)
 	return status.Status, nil
 }
 
-// IsForumTopicClosed checks if a forum topic is closed
 func (fs *ForumService) IsForumTopicClosed(messageThreadID int) bool {
 	status, err := fs.GetForumTopicStatus(messageThreadID)
 	if err != nil {
@@ -175,19 +146,16 @@ func (fs *ForumService) IsForumTopicClosed(messageThreadID int) bool {
 	return status == "closed"
 }
 
-// HandleForumStatusChange handles forum topic status changes from admin actions
 func (fs *ForumService) HandleForumStatusChange(messageThreadID int, newStatus string) error {
-	forumStatus := &models.ForumStatus{
+	forumStatus := &dbmodels.ForumStatus{
 		MessageThreadID: messageThreadID,
 		Status:          newStatus,
 	}
 	return fs.db.CreateOrUpdateForumStatus(forumStatus)
 }
 
-// GetUserByThreadID finds a user by their forum thread ID
-func (fs *ForumService) GetUserByThreadID(messageThreadID int) (*models.User, error) {
-	// This requires a database query to find user by message_thread_id
-	var user models.User
+func (fs *ForumService) GetUserByThreadID(messageThreadID int) (*dbmodels.User, error) {
+	var user dbmodels.User
 	err := fs.db.DB.Where("message_thread_id = ?", messageThreadID).First(&user).Error
 	if err != nil {
 		return nil, err
@@ -195,18 +163,11 @@ func (fs *ForumService) GetUserByThreadID(messageThreadID int) (*models.User, er
 	return &user, nil
 }
 
-// GetThreadIDFromMessage extracts thread ID from a message if it's in a forum topic
-func (fs *ForumService) GetThreadIDFromMessage(message *api.Message) int {
-	return message.MessageThreadID
+func (fs *ForumService) IsForumMessage(message *models.Message) bool {
+	return message.MessageThreadID != 0
 }
 
-// IsForumMessage checks if a message is from a forum topic
-func (fs *ForumService) IsForumMessage(message *api.Message) bool {
-	return fs.GetThreadIDFromMessage(message) != 0
-}
-
-// getFullName returns the full name of a user
-func (fs *ForumService) getFullName(user *models.User) string {
+func (fs *ForumService) getFullName(user *dbmodels.User) string {
 	fullName := user.FirstName
 	if user.LastName != "" {
 		fullName += " " + user.LastName
@@ -214,20 +175,14 @@ func (fs *ForumService) getFullName(user *models.User) string {
 	return fullName
 }
 
-// ValidateForumConfiguration validates forum-related configuration
-func (fs *ForumService) ValidateForumConfiguration() error {
+func (fs *ForumService) ValidateForumConfiguration(ctx context.Context) error {
 	if !fs.config.HasAdminGroup() {
 		return fmt.Errorf("admin group ID not configured")
 	}
 
-	// Test if the group exists and is accessible
-	chatConfig := api.ChatInfoConfig{
-		ChatConfig: api.ChatConfig{
-			ChatID: fs.config.AdminGroupID,
-		},
-	}
-
-	chat, err := fs.bot.GetChat(chatConfig)
+	chat, err := fs.bot.GetChat(ctx, &tgbot.GetChatParams{
+		ChatID: fs.config.AdminGroupID,
+	})
 	if err != nil {
 		return fmt.Errorf("cannot access admin group %d: %w", fs.config.AdminGroupID, err)
 	}
@@ -240,38 +195,45 @@ func (fs *ForumService) ValidateForumConfiguration() error {
 	return nil
 }
 
-// GetAllActiveTopics returns all active forum topics (for maintenance)
-func (fs *ForumService) GetAllActiveTopics() ([]models.ForumStatus, error) {
-	var topics []models.ForumStatus
+func (fs *ForumService) GetAllActiveTopics() ([]dbmodels.ForumStatus, error) {
+	var topics []dbmodels.ForumStatus
 	err := fs.db.DB.Where("status = ?", "opened").Find(&topics).Error
 	return topics, err
 }
 
-// BulkUpdateTopicStatus updates multiple topic statuses (for maintenance)
 func (fs *ForumService) BulkUpdateTopicStatus(threadIDs []int, status string) error {
-	return fs.db.DB.Model(&models.ForumStatus{}).
+	return fs.db.DB.Model(&dbmodels.ForumStatus{}).
 		Where("message_thread_id IN ?", threadIDs).
-		Update("status", status).
-		Update("updated_at", "NOW()").Error
+		Updates(map[string]interface{}{
+			"status":     status,
+			"updated_at": time.Now(),
+		}).Error
 }
 
 // ResetUserThreadID resets a user's thread ID when their topic is deleted
 func (fs *ForumService) ResetUserThreadID(userID int64) error {
-	// Reset user's message_thread_id to 0
-	err := fs.db.DB.Model(&models.User{}).
+	var user dbmodels.User
+	if err := fs.db.DB.Where("user_id = ?", userID).First(&user).Error; err != nil {
+		return fmt.Errorf("failed to find user %d: %w", userID, err)
+	}
+
+	oldThreadID := user.MessageThreadID
+
+	err := fs.db.DB.Model(&dbmodels.User{}).
 		Where("user_id = ?", userID).
 		Update("message_thread_id", 0).Error
 	if err != nil {
 		return fmt.Errorf("failed to reset user thread ID: %w", err)
 	}
 
-	// Remove the forum status record
-	err = fs.db.DB.Where("message_thread_id IN (SELECT message_thread_id FROM users WHERE user_id = ?)", userID).
-		Delete(&models.ForumStatus{}).Error
-	if err != nil {
-		log.Printf("Warning: failed to delete forum status for user %d: %v", userID, err)
+	if oldThreadID != 0 {
+		err = fs.db.DB.Where("message_thread_id = ?", oldThreadID).
+			Delete(&dbmodels.ForumStatus{}).Error
+		if err != nil {
+			log.Printf("Warning: failed to delete forum status for user %d (thread %d): %v", userID, oldThreadID, err)
+		}
 	}
 
-	log.Printf("Reset thread ID for user %d", userID)
+	log.Printf("Reset thread ID for user %d (old thread: %d)", userID, oldThreadID)
 	return nil
 }

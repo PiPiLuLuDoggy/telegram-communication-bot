@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"os"
 	"os/signal"
 	"syscall"
 	"telegram-communication-bot/internal/bot"
@@ -13,13 +12,11 @@ import (
 func main() {
 	log.Println("Starting Telegram Communication Bot...")
 
-	// Load configuration
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	// Validate configuration
 	if err := cfg.ValidateConfig(); err != nil {
 		log.Fatalf("Invalid configuration: %v", err)
 	}
@@ -29,47 +26,25 @@ func main() {
 	log.Printf("Admin Group: %d", cfg.AdminGroupID)
 	log.Printf("Admin Users: %v", cfg.AdminUserIDs)
 	log.Printf("Message Interval: %d seconds", cfg.MessageInterval)
+	if cfg.WebhookURL != "" {
+		log.Printf("Mode: Webhook (%s)", cfg.WebhookURL)
+	} else {
+		log.Printf("Mode: Polling")
+	}
 
-	// Create bot instance
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+
 	botInstance, err := bot.NewBot(cfg)
 	if err != nil {
 		log.Fatalf("Failed to create bot: %v", err)
 	}
+	defer botInstance.Stop()
 
-	// Setup graceful shutdown
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// Handle shutdown signals
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
-	go func() {
-		<-sigChan
-		log.Println("Received shutdown signal...")
-		cancel()
-		botInstance.Stop()
-	}()
-
-	// Set webhook if URL is provided
-	if cfg.WebhookURL != "" {
-		log.Printf("Setting webhook to: %s", cfg.WebhookURL)
-		if err := botInstance.SetWebhook(cfg.WebhookURL); err != nil {
-			log.Fatalf("Failed to set webhook: %v", err)
-		}
-		log.Println("Webhook mode enabled")
-	} else {
-		log.Println("Using polling mode")
-	}
-
-	// Start the bot
 	log.Println("Bot is starting...")
-	if err := botInstance.Start(); err != nil {
+	if err := botInstance.Start(ctx); err != nil {
 		log.Printf("Bot stopped with error: %v", err)
 	}
 
-	// Wait for context cancellation
-	<-ctx.Done()
 	log.Println("Bot shutdown completed")
 }
-

@@ -2,96 +2,43 @@ package services
 
 import (
 	"fmt"
-	"log"
-	"telegram-communication-bot/internal/database"
+	"sync"
 	"time"
 )
 
 type RateLimiter struct {
 	interval int // seconds between messages
-	db       *database.DB
+	mu       sync.Mutex
+	lastMsg  map[int64]time.Time
 }
 
-func NewRateLimiter(interval int, db *database.DB) *RateLimiter {
+func NewRateLimiter(interval int) *RateLimiter {
 	return &RateLimiter{
 		interval: interval,
-		db:       db,
+		lastMsg:  make(map[int64]time.Time),
 	}
 }
 
-// CheckRateLimit checks if a user can send a message now
-func (rl *RateLimiter) CheckRateLimit(userID int64) (bool, time.Duration, error) {
+// CheckAndRecord atomically checks if a user can send and records the timestamp.
+// Returns (canSend, waitTime).
+func (rl *RateLimiter) CheckAndRecord(userID int64) (bool, time.Duration) {
 	if rl.interval <= 0 {
-		// Rate limiting disabled
-		return true, 0, nil
+		return true, 0
 	}
 
-	// Get recent messages from this user
-	since := time.Now().Add(-time.Duration(rl.interval) * time.Second)
-	recentMessages, err := rl.db.GetRecentUserMessages(userID, since)
-	if err != nil {
-		log.Printf("Error checking rate limit for user %d: %v", userID, err)
-		// Allow message on error to avoid blocking users
-		return true, 0, nil
-	}
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
 
-	if len(recentMessages) == 0 {
-		// No recent messages, allow
-		return true, 0, nil
-	}
-
-	// Find the most recent message
-	var mostRecent time.Time
-	for _, msg := range recentMessages {
-		if msg.SentAt.After(mostRecent) {
-			mostRecent = msg.SentAt
+	now := time.Now()
+	if lastTime, ok := rl.lastMsg[userID]; ok {
+		nextAllowed := lastTime.Add(time.Duration(rl.interval) * time.Second)
+		if now.Before(nextAllowed) {
+			return false, nextAllowed.Sub(now)
 		}
 	}
 
-	// Calculate remaining wait time
-	nextAllowedTime := mostRecent.Add(time.Duration(rl.interval) * time.Second)
-	now := time.Now()
-
-	if now.Before(nextAllowedTime) {
-		// Still need to wait
-		waitTime := nextAllowedTime.Sub(now)
-		return false, waitTime, nil
-	}
-
-	// Can send now
-	return true, 0, nil
-}
-
-// RecordMessage records that a user sent a message
-func (rl *RateLimiter) RecordMessage(userID int64, chatID int64, messageID int) error {
-	// This is handled by the MessageService, but we provide this method for consistency
-	// In practice, the message recording is done when the message is processed
-	return nil
-}
-
-// GetRemainingCooldown returns the remaining cooldown time for a user
-func (rl *RateLimiter) GetRemainingCooldown(userID int64) time.Duration {
-	canSend, waitTime, err := rl.CheckRateLimit(userID)
-	if err != nil || canSend {
-		return 0
-	}
-	return waitTime
-}
-
-// IsRateLimited returns true if the user is currently rate limited
-func (rl *RateLimiter) IsRateLimited(userID int64) bool {
-	canSend, _, _ := rl.CheckRateLimit(userID)
-	return !canSend
-}
-
-// SetInterval updates the rate limit interval
-func (rl *RateLimiter) SetInterval(interval int) {
-	rl.interval = interval
-}
-
-// GetInterval returns the current rate limit interval
-func (rl *RateLimiter) GetInterval() int {
-	return rl.interval
+	rl.lastMsg[userID] = now
+	return true, 0
 }
 
 // FormatCooldownMessage returns a formatted message about the cooldown
@@ -120,19 +67,27 @@ func (rl *RateLimiter) IsEnabled() bool {
 	return rl.interval > 0
 }
 
-// Disable disables rate limiting by setting interval to 0
-func (rl *RateLimiter) Disable() {
-	rl.interval = 0
-}
-
-// Enable enables rate limiting with the specified interval
-func (rl *RateLimiter) Enable(interval int) {
+// SetInterval updates the rate limit interval
+func (rl *RateLimiter) SetInterval(interval int) {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
 	rl.interval = interval
 }
 
-// CleanupOldMessages removes old message records (called by scheduled tasks)
-func (rl *RateLimiter) CleanupOldMessages() error {
-	// Keep messages for up to 1 hour to handle edge cases
-	cutoff := time.Now().Add(-1 * time.Hour)
-	return rl.db.CleanupOldUserMessages(cutoff)
+// GetInterval returns the current rate limit interval
+func (rl *RateLimiter) GetInterval() int {
+	return rl.interval
+}
+
+// CleanupStaleEntries removes entries older than 2x the interval to prevent memory leaks
+func (rl *RateLimiter) CleanupStaleEntries() {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	cutoff := time.Now().Add(-2 * time.Duration(rl.interval) * time.Second)
+	for userID, lastTime := range rl.lastMsg {
+		if lastTime.Before(cutoff) {
+			delete(rl.lastMsg, userID)
+		}
+	}
 }

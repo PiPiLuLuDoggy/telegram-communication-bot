@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   telegram-bot:
     build:
@@ -27,10 +25,10 @@ services:
 
       # Server Settings (for webhook mode)
       PORT: ${PORT:-8090}
-      WEBHOOK_URL: ${WEBHOOK_URL}
+      WEBHOOK_URL: ${WEBHOOK_URL:-}
 
-      # Debug mode (default enabled for logging)
-      DEBUG: ${DEBUG:-true}
+      # Debug mode
+      DEBUG: ${DEBUG:-false}
 
     volumes:
       # Persist database and data

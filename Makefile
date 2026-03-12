@@ -22,21 +22,21 @@ help:
 APP_NAME := telegram-communication-bot
 BINARY_NAME := telegram-bot
 
-# Build the application
+# Build the application (CGO_ENABLED=0 for pure-Go SQLite via modernc.org/sqlite)
 build:
 	@echo "Building $(APP_NAME)..."
-	CGO_ENABLED=1 go build -o bin/$(BINARY_NAME) ./cmd/bot
+	CGO_ENABLED=0 go build -o bin/$(BINARY_NAME) ./cmd/bot
 	@echo "Build completed: bin/$(BINARY_NAME)"
 
 # Run the application
 run:
 	@echo "Running $(APP_NAME)..."
-	go run ./cmd/bot
+	CGO_ENABLED=0 go run ./cmd/bot
 
 # Run tests
 test:
 	@echo "Running tests..."
-	go test -v ./...
+	CGO_ENABLED=0 go test -v ./...
 
 # Clean build artifacts
 clean:
@@ -61,20 +61,6 @@ docker-clean:
 	@echo "Cleaning Docker resources..."
 	docker compose down -v --rmi all
 	docker system prune -f
-
-# Production Docker commands
-docker-prod-run:
-	@echo "Starting production services..."
-	docker compose -f docker-compose.prod.yml up -d
-
-docker-prod-stop:
-	@echo "Stopping production services..."
-	docker compose -f docker-compose.prod.yml down
-
-# Backup database (production)
-backup:
-	@echo "Running backup..."
-	docker compose -f docker-compose.prod.yml --profile backup up backup
 
 # Go module commands
 deps:
@@ -113,24 +99,19 @@ env-example:
 check: fmt lint test
 	@echo "Code quality check completed"
 
-# Release build (optimized)
+# Release build (optimized, pure-Go)
 release:
 	@echo "Building release version..."
-	CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bin/$(BINARY_NAME)-linux-amd64 ./cmd/bot
-	CGO_ENABLED=1 GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o bin/$(BINARY_NAME)-darwin-amd64 ./cmd/bot
-	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o bin/$(BINARY_NAME)-windows-amd64.exe ./cmd/bot
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bin/$(BINARY_NAME)-linux-amd64 ./cmd/bot
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o bin/$(BINARY_NAME)-darwin-amd64 ./cmd/bot
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o bin/$(BINARY_NAME)-windows-amd64.exe ./cmd/bot
 	@echo "Release builds completed"
 
 # Database migration (if needed in future)
 migrate:
 	@echo "Running database migrations..."
-	# Add migration commands here if needed
 
 # Log viewing
 logs:
 	@echo "Viewing application logs..."
 	docker compose logs -f telegram-bot
-
-logs-prod:
-	@echo "Viewing production logs..."
-	docker compose -f docker-compose.prod.yml logs -f telegram-bot

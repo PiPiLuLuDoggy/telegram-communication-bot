@@ -118,6 +118,14 @@ func (c *Config) ValidateConfig() error {
 		return fmt.Errorf("BOT_TOKEN is required")
 	}
 
+	if c.AdminGroupID == 0 {
+		return fmt.Errorf("ADMIN_GROUP_ID is required")
+	}
+
+	if len(c.AdminUserIDs) == 0 {
+		return fmt.Errorf("ADMIN_USER_IDS is required (at least one admin)")
+	}
+
 	if c.MessageInterval < 0 {
 		return fmt.Errorf("MESSAGE_INTERVAL must be non-negative")
 	}

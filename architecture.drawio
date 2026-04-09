@@ -1,0 +1,172 @@
+<mxfile host="65bd71144e">
+    <diagram id="SMNQQyn1TfVVZryb8EQz" name="Page-1">
+        <mxGraphModel dx="1198" dy="1152" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title1" value="Telegram 双向机器人架构图" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;fillColor=none;strokeColor=none;fontSize=22;fontStyle=1;fontColor=#1a1a2e;" parent="1" vertex="1">
+                    <mxGeometry x="300" y="8" width="600" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="title2" value="Telegram Communication Bot — System Architecture" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;fillColor=none;strokeColor=none;fontSize=13;fontColor=#888888;fontStyle=2;" parent="1" vertex="1">
+                    <mxGeometry x="300" y="38" width="600" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="bg1" value="" style="rounded=1;fillColor=#E3ECFA;strokeColor=#4472C4;strokeWidth=1;dashed=1;dashPattern=8 4;opacity=40;" parent="1" vertex="1">
+                    <mxGeometry x="30" y="75" width="1140" height="140" as="geometry"/>
+                </mxCell>
+                <mxCell id="bg1lbl" value="外部角色 / External Actors" style="text;html=1;align=left;verticalAlign=top;fillColor=none;strokeColor=none;fontSize=11;fontStyle=3;fontColor=#4472C4;" parent="1" vertex="1">
+                    <mxGeometry x="42" y="78" width="200" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="bg2" value="" style="rounded=1;fillColor=#E8F5E9;strokeColor=#2E7D32;strokeWidth=1;dashed=1;dashPattern=8 4;opacity=40;" parent="1" vertex="1">
+                    <mxGeometry x="30" y="235" width="1140" height="440" as="geometry"/>
+                </mxCell>
+                <mxCell id="bg2lbl" value="应用层 / Application Layer (Go)" style="text;html=1;align=left;verticalAlign=top;fillColor=none;strokeColor=none;fontSize=11;fontStyle=3;fontColor=#2E7D32;" parent="1" vertex="1">
+                    <mxGeometry x="42" y="238" width="250" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="bg3" value="" style="rounded=1;fillColor=#FCE4EC;strokeColor=#C62828;strokeWidth=1;dashed=1;dashPattern=8 4;opacity=40;" parent="1" vertex="1">
+                    <mxGeometry x="30" y="695" width="1140" height="240" as="geometry"/>
+                </mxCell>
+                <mxCell id="bg3lbl" value="数据层 / Data Layer" style="text;html=1;align=left;verticalAlign=top;fillColor=none;strokeColor=none;fontSize=11;fontStyle=3;fontColor=#C62828;" parent="1" vertex="1">
+                    <mxGeometry x="42" y="698" width="200" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="bg4" value="" style="rounded=1;fillColor=#F5F5F5;strokeColor=#616161;strokeWidth=1;dashed=1;dashPattern=8 4;opacity=40;" parent="1" vertex="1">
+                    <mxGeometry x="30" y="955" width="1140" height="65" as="geometry"/>
+                </mxCell>
+                <mxCell id="bg4lbl" value="基础设施 / Infrastructure" style="text;html=1;align=left;verticalAlign=top;fillColor=none;strokeColor=none;fontSize=11;fontStyle=3;fontColor=#616161;" parent="1" vertex="1">
+                    <mxGeometry x="42" y="958" width="200" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="n-user" value="普通用户&lt;br&gt;Regular User" style="html=1;rounded=1;whiteSpace=wrap;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=12;fontStyle=1;arcSize=20;shadow=1;" parent="1" vertex="1">
+                    <mxGeometry x="75" y="110" width="170" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="n-api" value="Telegram Bot API" style="html=1;rounded=1;whiteSpace=wrap;fillColor=#1565C0;strokeColor=#0D47A1;fontColor=#FFFFFF;fontSize=15;fontStyle=1;arcSize=20;shadow=1;" parent="1" vertex="1">
+                    <mxGeometry x="445" y="100" width="310" height="65" as="geometry"/>
+                </mxCell>
+                <mxCell id="n-admin" value="管理员群组 (论坛主题)&lt;br&gt;Admin Group (Forum Topics)" style="html=1;rounded=1;whiteSpace=wrap;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=12;fontStyle=1;arcSize=20;shadow=1;" parent="1" vertex="1">
+                    <mxGeometry x="880" y="110" width="255" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="n-config" value="&lt;b&gt;配置管理 / Configuration&lt;/b&gt;&lt;br&gt;config/config.go&lt;br&gt;(.env 环境变量 / Env Vars)" style="html=1;rounded=1;whiteSpace=wrap;fillColor=#FFF9C4;strokeColor=#F9A825;fontSize=11;arcSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="90" y="262" width="250" height="58" as="geometry"/>
+                </mxCell>
+                <mxCell id="n-main" value="&lt;b&gt;应用入口 / Entry Point&lt;/b&gt;&lt;br&gt;cmd/bot/main.go" style="html=1;rounded=1;whiteSpace=wrap;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=12;arcSize=15;shadow=1;" parent="1" vertex="1">
+                    <mxGeometry x="470" y="265" width="260" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="n-bot" value="&lt;b&gt;机器人核心 / Bot Core&lt;/b&gt;&lt;br&gt;bot/bot.go&lt;br&gt;(Polling 轮询 | Webhook 回调)" style="html=1;rounded=1;whiteSpace=wrap;fillColor=#A5D6A7;strokeColor=#2E7D32;fontSize=12;arcSize=15;shadow=1;strokeWidth=2;" parent="1" vertex="1">
+                    <mxGeometry x="420" y="348" width="310" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="n-cron" value="&lt;b&gt;定时任务 / Cron Scheduler&lt;/b&gt;&lt;br&gt;每小时清理 / Hourly Cleanup" style="html=1;rounded=1;whiteSpace=wrap;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=11;arcSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="845" y="352" width="260" height="52" as="geometry"/>
+                </mxCell>
+                <mxCell id="n-hdl" value="&lt;b&gt;消息路由与处理 / Message Handler&lt;/b&gt;&lt;br&gt;handlers/handlers.go&lt;br&gt;(命令解析 · 用户消息 · 管理回复)" style="html=1;rounded=1;whiteSpace=wrap;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=11;arcSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="195" y="445" width="320" height="65" as="geometry"/>
+                </mxCell>
+                <mxCell id="n-adm" value="&lt;b&gt;管理员命令 / Admin Commands&lt;/b&gt;&lt;br&gt;handlers/admin.go&lt;br&gt;(/clear · /broadcast · /stats · /reset)" style="html=1;rounded=1;whiteSpace=wrap;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=11;arcSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="635" y="445" width="310" height="65" as="geometry"/>
+                </mxCell>
+                <mxCell id="n-msgsvc" value="&lt;b&gt;消息服务 / Message Service&lt;/b&gt;&lt;br&gt;services/message.go&lt;br&gt;(转发 · 映射 · 媒体组处理)" style="html=1;rounded=1;whiteSpace=wrap;fillColor=#E1BEE7;strokeColor=#6A1B9A;fontSize=11;arcSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="560" width="290" height="65" as="geometry"/>
+                </mxCell>
+                <mxCell id="n-forumsvc" value="&lt;b&gt;论坛服务 / Forum Service&lt;/b&gt;&lt;br&gt;services/forum.go&lt;br&gt;(主题创建 · 关闭 · 重开 · 删除)" style="html=1;rounded=1;whiteSpace=wrap;fillColor=#E1BEE7;strokeColor=#6A1B9A;fontSize=11;arcSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="410" y="560" width="310" height="65" as="geometry"/>
+                </mxCell>
+                <mxCell id="n-ratesvc" value="&lt;b&gt;速率限制器 / Rate Limiter&lt;/b&gt;&lt;br&gt;services/ratelimiter.go&lt;br&gt;(消息频率控制 / Cooldown)" style="html=1;rounded=1;whiteSpace=wrap;fillColor=#E1BEE7;strokeColor=#6A1B9A;fontSize=11;arcSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="800" y="560" width="290" height="65" as="geometry"/>
+                </mxCell>
+                <mxCell id="n-models" value="&lt;b&gt;数据模型 / Data Models&lt;/b&gt;&lt;hr&gt;• User (用户信息)&lt;br&gt;• MessageMap (消息映射)&lt;br&gt;• ForumStatus (论坛状态)&lt;br&gt;• BanStatus (封禁状态)&lt;br&gt;• UserMessage (用户消息记录)&lt;br&gt;• MediaGroupMessage (媒体组)" style="html=1;rounded=1;whiteSpace=wrap;fillColor=#FFEBEE;strokeColor=#C62828;fontSize=11;arcSize=10;align=left;spacingLeft=12;verticalAlign=top;spacingTop=5;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="720" width="310" height="195" as="geometry"/>
+                </mxCell>
+                <mxCell id="n-db" value="&lt;b&gt;数据库 / Database&lt;/b&gt;&lt;br&gt;database/database.go&lt;br&gt;(GORM ORM)" style="shape=cylinder3;html=1;whiteSpace=wrap;fillColor=#EF9A9A;strokeColor=#C62828;fontSize=12;size=12;shadow=1;" parent="1" vertex="1">
+                    <mxGeometry x="480" y="730" width="240" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="n-sqlite" value="&lt;b&gt;SQLite&lt;/b&gt;&lt;br&gt;(WAL 模式 / WAL Mode)" style="shape=cylinder3;html=1;whiteSpace=wrap;fillColor=#FFCDD2;strokeColor=#C62828;fontSize=11;size=10;" parent="1" vertex="1">
+                    <mxGeometry x="505" y="845" width="190" height="65" as="geometry"/>
+                </mxCell>
+                <mxCell id="n-docker" value="&lt;b&gt;Docker 容器部署 / Docker Container Deployment&lt;/b&gt;&lt;br&gt;docker-compose.yml · Dockerfile" style="html=1;rounded=1;whiteSpace=wrap;fillColor=#EEEEEE;strokeColor=#616161;fontSize=12;arcSize=15;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="967" width="800" height="42" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" value="私聊 / Private Chat" style="edgeStyle=orthogonalEdgeStyle;rounded=1;curved=1;strokeColor=#1565C0;strokeWidth=2;fontSize=9;fontColor=#1565C0;fontStyle=2;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="n-user" target="n-api" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" value="论坛消息 / Forum Messages" style="edgeStyle=orthogonalEdgeStyle;rounded=1;curved=1;strokeColor=#1565C0;strokeWidth=2;fontSize=9;fontColor=#1565C0;fontStyle=2;endArrow=block;endFill=1;startArrow=block;startFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="n-api" target="n-admin" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e3" value="更新推送 / Updates" style="edgeStyle=orthogonalEdgeStyle;rounded=1;curved=1;strokeColor=#2E7D32;strokeWidth=2;fontSize=9;fontColor=#2E7D32;fontStyle=2;endArrow=block;endFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="n-api" target="n-main" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e4" value="加载 / Load" style="edgeStyle=orthogonalEdgeStyle;rounded=1;curved=1;strokeColor=#F9A825;strokeWidth=1;fontSize=9;fontColor=#F9A825;fontStyle=2;endArrow=open;endFill=0;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="n-config" target="n-main" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e5" value="创建启动 / Create" style="edgeStyle=orthogonalEdgeStyle;rounded=1;curved=1;strokeColor=#2E7D32;strokeWidth=2;fontSize=9;fontColor=#2E7D32;fontStyle=2;endArrow=block;endFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="n-main" target="n-bot" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e6" value="注册任务 / Register" style="edgeStyle=orthogonalEdgeStyle;rounded=1;curved=1;strokeColor=#2E7D32;strokeWidth=1;fontSize=9;fontColor=#2E7D32;fontStyle=2;endArrow=open;endFill=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="n-bot" target="n-cron" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e7" value="分发消息 / Dispatch" style="edgeStyle=orthogonalEdgeStyle;rounded=1;curved=1;strokeColor=#E65100;strokeWidth=2;fontSize=9;fontColor=#E65100;fontStyle=2;endArrow=block;endFill=1;exitX=0.3;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="n-bot" target="n-hdl" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;curved=1;strokeColor=#E65100;strokeWidth=1;endArrow=block;endFill=1;dashed=1;exitX=0.7;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="n-bot" target="n-adm" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;curved=1;strokeColor=#6A1B9A;strokeWidth=1;endArrow=block;endFill=1;exitX=0.15;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="n-hdl" target="n-msgsvc" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e10" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;curved=1;strokeColor=#6A1B9A;strokeWidth=1;endArrow=block;endFill=1;exitX=0.6;exitY=1;exitDx=0;exitDy=0;entryX=0.3;entryY=0;entryDx=0;entryDy=0;" parent="1" source="n-hdl" target="n-forumsvc" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;curved=1;strokeColor=#6A1B9A;strokeWidth=1;endArrow=block;endFill=1;exitX=1;exitY=0.7;exitDx=0;exitDy=0;entryX=0.2;entryY=0;entryDx=0;entryDy=0;" parent="1" source="n-hdl" target="n-ratesvc" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e12" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;curved=1;strokeColor=#6A1B9A;strokeWidth=1;endArrow=block;endFill=1;dashed=1;exitX=0.3;exitY=1;exitDx=0;exitDy=0;entryX=0.7;entryY=0;entryDx=0;entryDy=0;" parent="1" source="n-adm" target="n-forumsvc" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e13" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;curved=1;strokeColor=#C62828;strokeWidth=1;endArrow=block;endFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.2;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="n-msgsvc" target="n-db" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e14" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;curved=1;strokeColor=#C62828;strokeWidth=1;endArrow=block;endFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="n-forumsvc" target="n-db" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e15" value="清理 / Cleanup" style="edgeStyle=orthogonalEdgeStyle;rounded=1;curved=1;strokeColor=#C62828;strokeWidth=1;fontSize=9;fontColor=#C62828;fontStyle=2;endArrow=open;endFill=0;dashed=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.3;entryDx=0;entryDy=0;" parent="1" source="n-cron" target="n-db" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e16" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;curved=1;strokeColor=#C62828;strokeWidth=2;endArrow=block;endFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="n-db" target="n-sqlite" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e17" value="ORM 映射 / ORM Mapping" style="edgeStyle=orthogonalEdgeStyle;rounded=1;curved=1;strokeColor=#C62828;strokeWidth=1;fontSize=9;fontColor=#C62828;fontStyle=2;endArrow=open;endFill=0;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="n-models" target="n-db" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend" value="&lt;b&gt;图例 / Legend&lt;/b&gt;" style="text;html=1;align=left;verticalAlign=top;fillColor=none;strokeColor=none;fontSize=11;fontColor=#333;" parent="1" vertex="1">
+                    <mxGeometry x="835" y="720" width="100" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg1" value="" style="rounded=1;fillColor=#BBDEFB;strokeColor=#1565C0;" parent="1" vertex="1">
+                    <mxGeometry x="835" y="745" width="18" height="12" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg1t" value="外部交互 / External" style="text;html=1;align=left;verticalAlign=middle;fillColor=none;strokeColor=none;fontSize=10;fontColor=#555;" parent="1" vertex="1">
+                    <mxGeometry x="860" y="740" width="150" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg2" value="" style="rounded=1;fillColor=#C8E6C9;strokeColor=#2E7D32;" parent="1" vertex="1">
+                    <mxGeometry x="835" y="765" width="18" height="12" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg2t" value="核心组件 / Core" style="text;html=1;align=left;verticalAlign=middle;fillColor=none;strokeColor=none;fontSize=10;fontColor=#555;" parent="1" vertex="1">
+                    <mxGeometry x="860" y="760" width="150" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg3" value="" style="rounded=1;fillColor=#FFE0B2;strokeColor=#E65100;" parent="1" vertex="1">
+                    <mxGeometry x="835" y="785" width="18" height="12" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg3t" value="处理器 / Handlers" style="text;html=1;align=left;verticalAlign=middle;fillColor=none;strokeColor=none;fontSize=10;fontColor=#555;" parent="1" vertex="1">
+                    <mxGeometry x="860" y="780" width="150" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg4" value="" style="rounded=1;fillColor=#E1BEE7;strokeColor=#6A1B9A;" parent="1" vertex="1">
+                    <mxGeometry x="835" y="805" width="18" height="12" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg4t" value="业务服务 / Services" style="text;html=1;align=left;verticalAlign=middle;fillColor=none;strokeColor=none;fontSize=10;fontColor=#555;" parent="1" vertex="1">
+                    <mxGeometry x="860" y="800" width="150" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg5" value="" style="rounded=1;fillColor=#EF9A9A;strokeColor=#C62828;" parent="1" vertex="1">
+                    <mxGeometry x="835" y="825" width="18" height="12" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg5t" value="数据存储 / Data" style="text;html=1;align=left;verticalAlign=middle;fillColor=none;strokeColor=none;fontSize=10;fontColor=#555;" parent="1" vertex="1">
+                    <mxGeometry x="860" y="820" width="150" height="20" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
